@@ -30,10 +30,14 @@ with zipfile.ZipFile(source, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as arch
 
 store = DIST / 'project-echo-store-kit.zip'
 with zipfile.ZipFile(store, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
-    for directory in [ROOT / 'docs', ROOT / 'assets/store', ROOT / 'artifacts/store']:
+    media = ROOT / 'docs/media'
+    for directory in [ROOT / 'docs', ROOT / 'assets/store']:
         for file in sorted(directory.rglob('*')):
-            if file.is_file() and file.suffix in {'.md', '.html', '.txt', '.png', '.svg', '.mp4'}:
+            if file.is_file() and 'media' not in file.relative_to(ROOT).parts and file.suffix in {'.md', '.html', '.txt', '.png', '.svg', '.mp4'}:
                 archive.write(file, file.relative_to(ROOT))
+    for file in sorted(media.glob('*')):
+        if file.suffix in {'.png', '.mp4'}:
+            archive.write(file, Path('artifacts/store') / file.name)
     archive.writestr('READ-ME-FIRST.txt',
         'HamWebDev / Project ECHO — prerelease materials.\n'
         'The name is a working title. Screenshots and clips demonstrate the actual Godot game.\n'

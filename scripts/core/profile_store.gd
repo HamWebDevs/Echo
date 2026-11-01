@@ -2,7 +2,7 @@ class_name ProfileStore
 extends RefCounted
 
 const THRESHOLDS := [0, 10, 25, 50, 100, 200, 400, 800, 1600]
-const SKIN_NAMES := ["Signal", "Orbit", "Prism", "Nova", "Satellite", "Helix", "Comet", "Pulsar", "Infinity", "Aurora", "Obsidian", "Solar", "Spectrum"]
+const SKIN_NAMES := ["Pip", "Skipper", "Petal", "Mochi", "Party Bean", "Peaches", "Sprout", "Sunny", "Cupcake", "Lagoon", "Moonflower", "Butters", "Pickle"]
 var path := "user://profile.json"
 var data: Dictionary
 var recovered := false

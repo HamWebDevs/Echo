@@ -4,13 +4,23 @@ A portrait Android arcade game: collect sparks and dodge delayed echoes of your 
 
 Project ECHO is a development name, not a cleared commercial brand. The package ID is `com.hamwebdev.echo`.
 
+## Cartoon preview 0.2.0
+
+Pip and the copycats replace the neon presentation with chunky outlines, rounded Nunito lettering, playful hats, blinking faces, wobbling stars, button squash, score bounces and collection confetti. Reduced motion disables decorative animation. Existing saves and gameplay rules remain compatible. See [preview notes](docs/PREVIEW.md).
+
+The **Android preview download** GitHub workflow builds installable artifacts and attaches them to a draft release using GitHub’s own token. It can be run from the Actions tab. CI generates a temporary development key; builds from different signing sources cannot update one another in place.
+
+<img src="docs/media/home.png" alt="Cartoon home screen with Pip and the purple copycats" width="270"> <img src="docs/media/game.png" alt="The cartoon game arena" width="270">
+
+[Watch gameplay](docs/media/echoes.mp4)
+
 ## What is implemented
 
 - Fixed-step gameplay, six delayed echoes, advance warnings, spawn grace, swept collisions, timed collection, and increasing score multipliers.
 - Endless mode and reproducible daily challenges keyed by UTC date and rules version.
 - Floating touch joystick; keyboard support; tutorial; pause and countdown; death replay; instant retry; shareable score cards.
-- Local personal records, nine base/earned signals, four supporter signals, two supporter arena themes, and an alternate sound palette.
-- Original geometric visuals and synthesized audio, responsive portrait screens, high contrast, reduced motion, and sound/vibration settings.
+- Local personal records, nine base/earned pals, four supporter pals, two supporter arena themes, and an alternate sound palette.
+- Original cartoon characters and warm illustrated visuals and synthesized audio, responsive portrait screens, high contrast, reduced motion, and sound/vibration settings.
 - Atomic saves with backup recovery, no required account, and offline core gameplay.
 - A compiled Android bridge for RevenueCat purchase validation/restoration, optional Firebase Analytics, and native image sharing.
 - Automated gameplay and UI integration tests, Android build tooling, release preflight, privacy draft, and store copy.

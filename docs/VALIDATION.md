@@ -1,3 +1,9 @@
+# Cartoon preview 0.2.0
+
+The cartoon presentation retains the same rules and save schema. All 40 core checks and 21 UI checks pass after the character, typography, interaction-animation and audio changes. Current screenshots and clips are generated from the real browser build. Physical-device validation, native sharing and billing remain outstanding. APK sizes and hashes for each delivered build are recorded in its manifest.
+
+The record below describes the preceding 0.1.0 package; it is retained as historical evidence, not a claim that its native checks cover every later build.
+
 # Validation record — Project ECHO 0.1.0
 
 Prepared 1 November 2026 for HamWebDev. This records observed checks for the supplied development artifacts; it does not establish production readiness or player retention.

@@ -35,7 +35,7 @@ func release() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_style_box(EchoStyle.box(Color("0b1523"), 22, Color("1b2c3e")), Rect2(Vector2.ZERO, size))
+	draw_style_box(EchoStyle.box(Color("f5e5c5"), 22, EchoStyle.BORDER), Rect2(Vector2.ZERO, size))
 	var center := origin if held else size / 2
 	var displacement := (pointer - origin).limit_length(38) if held else Vector2.ZERO
 	draw_circle(center, 48, Color(EchoStyle.MINT, 0.025))
@@ -45,4 +45,4 @@ func _draw() -> void:
 		draw_line(center + axis * 53, center + axis * 58, Color(EchoStyle.MUTED, 0.35), 1, true)
 	draw_circle(center + displacement, 17, Color(EchoStyle.MINT, 0.12 if held else 0.04))
 	draw_arc(center + displacement, 17, 0, TAU, 32, Color(EchoStyle.MINT, 0.6 if held else 0.25), 1.5, true)
-	draw_circle(center + displacement, 3, EchoStyle.MINT if held else EchoStyle.MUTED)
+	CartoonArt.buddy(self, center + displacement, 18, 0, 0, false, 1.0 if held else 0.65)

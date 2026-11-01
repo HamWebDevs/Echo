@@ -1,0 +1,47 @@
+name: Android preview download
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Godot and Android export templates
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/echo-godot
+          echo 'f64d4ed19fc9df9440321653fcc80df8c6e365ba7b6de0a29e2cfa9fa71bfeb3  /tmp/echo-godot/Godot_v4.6.3-stable_linux.x86_64' | sha256sum --check
+          sudo install -m 755 /tmp/echo-godot/Godot_v4.6.3-stable_linux.x86_64 /usr/local/bin/godot
+          curl --fail --location --retry 3 https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_export_templates.tpz -o /tmp/templates.tpz
+          echo '3fbe2c0e2dec9d537ab9ec97bcf8da91dcf23357fc51f67092dd068d839290a8  /tmp/templates.tpz' | sha256sum --check
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          unzip -j /tmp/templates.tpz 'templates/android*' -d "$HOME/.local/share/godot/export_templates/4.6.3.stable"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'build-tools;36.1.0' 'platform-tools'
+      - name: Test and build
+        run: |
+          bash tools/test.sh
+          python tools/build_android.py --sdk "$ANDROID_HOME" --java "$JAVA_HOME" --aab
+          python tools/package_handoff.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: echo-cartoon-android-preview
+          path: |
+            build/android/project-echo-preview.apk
+            build/android/project-echo-unsigned.aab
+            dist/*.zip
+            dist/manifest.json
+          retention-days: 30
+      - name: Attach downloads to draft preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v0.2.0-preview >/dev/null 2>&1 || gh release create v0.2.0-preview --target "$GITHUB_SHA" --draft --prerelease --title 'ECHO 0.2.0 — cartoon preview' --notes-file docs/PREVIEW.md
+          gh release upload v0.2.0-preview build/android/project-echo-preview.apk build/android/project-echo-unsigned.aab dist/*.zip dist/manifest.json --clobber

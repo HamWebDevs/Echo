@@ -9,12 +9,13 @@ func _draw() -> void:
 	draw_circle(Vector2(960, 200), 400, Color(EchoStyle.MINT, 0.025))
 	draw_string(EchoStyle.display, Vector2(80, 140), "ECHO", HORIZONTAL_ALIGNMENT_LEFT, -1, 84, EchoStyle.MINT)
 	draw_string(EchoStyle.body, Vector2(80, 208), "YOUR PAST IS CATCHING UP.", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, EchoStyle.MUTED)
+	CartoonArt.buddy(self, Vector2(910, 140), 70, 0, 0)
 	draw_line(Vector2(80, 256), Vector2(1000, 256), EchoStyle.BORDER, 2)
 	var mode := "DAILY SIGNAL  /  " + str(result.get("daily_date", "")) if result.get("mode") == "daily" else "ENDLESS  /  PERSONAL RUN"
 	draw_string(EchoStyle.body, Vector2(80, 330), mode, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, EchoStyle.GOLD)
 	draw_string(EchoStyle.display, Vector2(70, 565), str(result.get("score", 0)), HORIZONTAL_ALIGNMENT_LEFT, -1, 216, EchoStyle.TEXT)
 	draw_string(EchoStyle.body, Vector2(80, 630), "%d SPARKS     /     %.1f SECONDS     /     %d ECHOES" % [result.get("sparks",0), result.get("duration",0), result.get("echoes",0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 24, EchoStyle.MUTED)
-	draw_style_box(EchoStyle.box(Color("0e1b2b"), 32), Rect2(80, 700, 920, 440))
+	draw_style_box(EchoStyle.box(EchoStyle.PANEL, 32), Rect2(80, 700, 920, 440))
 	if route.size() > 1:
 		var points := PackedVector2Array()
 		for point in route:

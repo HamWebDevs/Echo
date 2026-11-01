@@ -40,6 +40,7 @@ func _ready() -> void:
 		if public_config is Dictionary:
 			metadata.merge(public_config, true)
 	profile.load_profile()
+	EchoStyle.reduced_motion = profile.data.settings.reduced_motion
 	services = PlatformServices.new()
 	add_child(services)
 	services.message.connect(_toast)
@@ -70,7 +71,9 @@ func _ready() -> void:
 
 func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, size), EchoStyle.BG)
-	draw_circle(Vector2(size.x * 0.9, 90), 240, Color(EchoStyle.MINT, 0.016))
+	for x in range(12, int(size.x), 32):
+		for y in range(14, int(size.y), 32):
+			draw_circle(Vector2(x, y), 0.8, Color(0.45, 0.3, 0.2, 0.08))
 	draw_circle(Vector2(0, size.y * 0.8), 200, Color(EchoStyle.PURPLE, 0.013))
 
 func _new_page(next_state: String, spacing: int = 10) -> VBoxContainer:
@@ -92,6 +95,9 @@ func _new_page(next_state: String, spacing: int = 10) -> VBoxContainer:
 	body = EchoStyle.vbox(spacing)
 	page.add_child(body)
 	_layout()
+	if not profile.data.settings.reduced_motion:
+		page.modulate.a = 0
+		page.create_tween().tween_property(page, "modulate:a", 1.0, 0.16)
 	return body
 
 func _layout() -> void:
@@ -149,14 +155,16 @@ func show_home() -> void:
 	var brand := EchoStyle.label("PROJECT ECHO", 13, EchoStyle.TEXT, true)
 	brand.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(brand)
-	header.add_child(EchoStyle.label("OFFLINE READY", 10, EchoStyle.MINT))
+	header.add_child(EchoStyle.label("NO WI-FI NEEDED", 10, EchoStyle.MINT))
 	body.add_child(header)
 	body.add_child(EchoStyle.spacer(9, true))
-	body.add_child(EchoStyle.label("OUTRUN YOURSELF", 12, EchoStyle.MINT))
+	body.add_child(EchoStyle.label("A LITTLE CHASE. A LOT OF CHAOS.", 12, EchoStyle.MINT))
 	var title := EchoStyle.label("ECHO", 100, EchoStyle.TEXT, true)
-	title.add_theme_constant_override("outline_size", 0)
+	title.add_theme_constant_override("outline_size", 8)
+	title.add_theme_color_override("font_outline_color", EchoStyle.BORDER)
+	title.add_theme_color_override("font_color", Color("f2be56"))
 	body.add_child(title)
-	body.add_child(EchoStyle.label("Your past is catching up.", 22, EchoStyle.MUTED, true))
+	body.add_child(EchoStyle.label("Uh-oh. You made copycats.", 22, EchoStyle.MUTED, true))
 	body.add_child(EchoStyle.spacer(4))
 	var demo := ArenaView.new()
 	demo.demo = true
@@ -180,7 +188,7 @@ func show_home() -> void:
 	row.add_child(right)
 	stats.add_child(row)
 	body.add_child(EchoStyle.button("PLAY ENDLESS     →", func() -> void: request_start("endless"), true, 64))
-	var daily := EchoStyle.button("THE DAILY SIGNAL     ↗\n%s  ·  A new route every day" % _friendly_date(), func() -> void: request_start("daily"), false, 76)
+	var daily := EchoStyle.button("THE DAILY CHASE     ↗\n%s  ·  A new route every day" % _friendly_date(), func() -> void: request_start("daily"), false, 76)
 	daily.add_theme_font_size_override("font_size", 16)
 	body.add_child(daily)
 	var navigation := EchoStyle.hbox(8)
@@ -236,7 +244,7 @@ func start_run(config: RunConfig) -> void:
 	audio.begin_music()
 	audio.play("start")
 	var top := EchoStyle.hbox()
-	var mode_label := EchoStyle.label("GUIDED RUN" if config.tutorial else ("DAILY SIGNAL  /  " + config.daily_date if config.mode == "daily" else "ENDLESS  /  FIND YOUR FLOW"), 12, EchoStyle.MINT)
+	var mode_label := EchoStyle.label("GUIDED RUN" if config.tutorial else ("DAILY CHASE  /  " + config.daily_date if config.mode == "daily" else "ENDLESS  /  FIND YOUR FLOW"), 12, EchoStyle.MINT)
 	mode_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(mode_label)
 	top.add_child(EchoStyle.button("II", pause_game, false, 44))
@@ -314,12 +322,15 @@ func _physics_process(_delta: float) -> void:
 	for event in run.events:
 		if event.type == "spark":
 			arena.burst(event.position)
+			if not profile.data.settings.reduced_motion:
+				score_label.scale = Vector2(1.10, 0.92)
+				score_label.create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT).tween_property(score_label, "scale", Vector2.ONE, 0.24)
 			audio.play("spark", run.echo_count())
 			if run.config.tutorial and tutorial_stage == 0:
 				tutorial_stage = 1
 				paused = true
 				pad.release()
-				var content := _modal("01 / SPARK COLLECTED", "Keep the signal alive")
+				var content := _modal("01 / SPARK COLLECTED", "Grab another star")
 				content.add_child(_paragraph("Each gold spark refills your timer. Keep moving toward the next one. Your first echo arrives at eight seconds."))
 				content.add_child(EchoStyle.button("GOT IT", _resume_game, true))
 		elif event.type == "echo":
@@ -329,7 +340,7 @@ func _physics_process(_delta: float) -> void:
 				paused = true
 				pad.release()
 				var content := _modal("02 / MEET YOUR ECHO", "That was you")
-				content.add_child(_paragraph("The purple diamond repeats your movement from eight seconds ago. Avoid its body. Faint trails are safe to cross."))
+				content.add_child(_paragraph("The purple copycat repeats your movement from eight seconds ago. Avoid its body. Faint trails are safe to cross."))
 				content.add_child(EchoStyle.button("LET'S DODGE IT", _resume_game, true))
 		elif event.type == "death":
 			_end_run()
@@ -417,7 +428,7 @@ func pause_game() -> void:
 	paused = true
 	resume_time = 0
 	pad.release()
-	var content := _modal("TAKE YOUR TIME", "Signal paused")
+	var content := _modal("TAKE YOUR TIME", "Snack break!")
 	content.add_child(_paragraph("Your run will be right here. Resume when you're ready."))
 	content.add_child(EchoStyle.button("RESUME", _resume_game, true))
 	content.add_child(EchoStyle.button("Restart run", func() -> void: start_run(run.config)))
@@ -490,9 +501,9 @@ func _death_detail() -> String:
 
 func show_results() -> void:
 	_new_page("results", 14)
-	_header("DAILY SIGNAL  /  " + run.config.daily_date if run.config.mode == "daily" else "ENDLESS  /  RUN COMPLETE", show_home)
+	_header("DAILY CHASE  /  " + run.config.daily_date if run.config.mode == "daily" else "ENDLESS  /  RUN COMPLETE", show_home)
 	body.add_child(EchoStyle.spacer(12, true))
-	body.add_child(EchoStyle.label("NEW PERSONAL BEST" if result_info.get("new_best", false) else "EVERY RUN TEACHES YOU SOMETHING", 12, EchoStyle.MINT))
+	body.add_child(EchoStyle.label("NEW PERSONAL BEST" if result_info.get("new_best", false) else "WHOOPS! SHALL WE GO AGAIN?", 12, EchoStyle.MINT))
 	body.add_child(EchoStyle.label(str(run.score), 106, EchoStyle.TEXT, true))
 	var row := EchoStyle.hbox(10)
 	for stat in [[str(run.sparks), "SPARKS"], ["%.1fs" % run.elapsed(), "SURVIVED"], [str(run.echo_count()), "ECHOES"]]:
@@ -505,10 +516,10 @@ func show_results() -> void:
 	insight.add_child(EchoStyle.label(_death_title(), 25, EchoStyle.TEXT, true))
 	insight.add_child(_paragraph(_death_detail(), 15))
 	insight.add_child(EchoStyle.button("WATCH THE LAST MOMENT  ↗", _show_replay, false, 45))
-	var unlock := _panel(body, Color("10242b"))
+	var unlock := _panel(body, Color("e3f1de"))
 	var next := profile.next_unlock()
-	unlock.add_child(EchoStyle.label("NEW SIGNAL UNLOCKED" if result_info.get("unlocked", false) else "YOUR COLLECTION IS GROWING", 11, EchoStyle.MINT))
-	unlock.add_child(_paragraph("All earned signals unlocked. Keep chasing your best." if next < 0 else "%d / %d lifetime sparks to your next signal." % [profile.data.lifetime_sparks, next], 15))
+	unlock.add_child(EchoStyle.label("A NEW PAL JUST ARRIVED" if result_info.get("unlocked", false) else "YOUR COLLECTION IS GROWING", 11, EchoStyle.MINT))
+	unlock.add_child(_paragraph("All earned pals unlocked. Keep chasing your best." if next < 0 else "%d / %d lifetime sparks to your next pal." % [profile.data.lifetime_sparks, next], 15))
 	body.add_child(EchoStyle.spacer(4, true))
 	body.add_child(EchoStyle.button("ONE MORE RUN     →", _retry, true, 64))
 	var actions := EchoStyle.hbox()
@@ -561,8 +572,8 @@ func _share() -> void:
 func show_collection() -> void:
 	_new_page("collection", 14)
 	_header("YOUR COLLECTION", show_home)
-	body.add_child(EchoStyle.label("Find your signal.", 38, EchoStyle.TEXT, true))
-	body.add_child(_paragraph("Different looks. Same perfect hitbox. Earn signals simply by collecting sparks.", 15))
+	body.add_child(EchoStyle.label("Pick your little pal.", 38, EchoStyle.TEXT, true))
+	body.add_child(_paragraph("A new hat, a new mood. Collect sparks to meet the whole bunch.", 15))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -570,7 +581,7 @@ func show_collection() -> void:
 	var content := EchoStyle.vbox(16)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(content)
-	content.add_child(EchoStyle.label("EARNED SIGNALS  /  %d OF 9" % profile.unlocked_count(), 11, EchoStyle.MINT))
+	content.add_child(EchoStyle.label("YOUR PALS  /  %d OF 9" % profile.unlocked_count(), 11, EchoStyle.MINT))
 	var grid := GridContainer.new()
 	grid.columns = 3
 	grid.add_theme_constant_override("h_separation", 10)
@@ -578,7 +589,7 @@ func show_collection() -> void:
 	content.add_child(grid)
 	for i in range(9):
 		_add_skin(grid, i)
-	content.add_child(EchoStyle.label("SUPPORTER SIGNALS", 11, EchoStyle.GOLD))
+	content.add_child(EchoStyle.label("BONUS PALS", 11, EchoStyle.GOLD))
 	var premium := GridContainer.new()
 	premium.columns = 3
 	premium.add_theme_constant_override("h_separation", 10)
@@ -586,7 +597,7 @@ func show_collection() -> void:
 	content.add_child(premium)
 	for i in range(9, 13):
 		_add_skin(premium, i)
-	body.add_child(EchoStyle.button("SUPPORT THE SIGNAL  ↗" if not services.supporter else "YOUR SUPPORTER EXTRAS  ↗", show_supporter, false, 56))
+	body.add_child(EchoStyle.button("EXTRA LITTLE PALS  ↗" if not services.supporter else "YOUR SUPPORTER EXTRAS  ↗", show_supporter, false, 56))
 
 func _add_skin(parent: Node, index: int) -> void:
 	var tile := SkinTile.new()
@@ -611,21 +622,22 @@ func show_supporter() -> void:
 	_new_page("supporter", 16)
 	_header("THE SUPPORTER PACK", show_collection)
 	body.add_child(EchoStyle.spacer(10, true))
-	body.add_child(EchoStyle.label("Keep the\nsignal alive.", 49, EchoStyle.TEXT, true))
+	body.add_child(EchoStyle.label("More hats.\nMore happy.", 49, EchoStyle.TEXT, true))
 	body.add_child(_paragraph("A little more self-expression. A lot of support for an independent game.", 18))
 	var demo := ArenaView.new()
 	demo.demo = true
 	demo.skin = 10
+	demo.reduced_motion = profile.data.settings.reduced_motion
 	demo.custom_minimum_size.y = 180
 	body.add_child(demo)
 	var features := _panel(body)
 	features.add_child(EchoStyle.label("YOURS, PERMANENTLY", 11, EchoStyle.GOLD))
-	for feature in ["Four exclusive signals", "Two additional arena themes", "An alternative sound palette"]:
+	for feature in ["Four exclusive pals", "Two additional arena themes", "An alternative sound palette"]:
 		features.add_child(EchoStyle.label("+  " + feature, 17, EchoStyle.TEXT, true))
 	features.add_child(_paragraph("A single purchase. Every score is earned through skill.", 14))
 	if services.supporter:
 		body.add_child(EchoStyle.label("THANK YOU FOR SUPPORTING ECHO", 13, EchoStyle.MINT))
-		body.add_child(EchoStyle.button("Arena theme: " + ["Midnight", "Deep sea", "Ultraviolet"][profile.data.theme], func() -> void:
+		body.add_child(EchoStyle.button("Arena theme: " + ["Biscuit", "Garden", "Berry"][profile.data.theme], func() -> void:
 			profile.data.theme = (profile.data.theme + 1) % 3
 			profile.save()
 			show_supporter()))
@@ -642,7 +654,7 @@ func show_supporter() -> void:
 		buy.disabled = services.price.is_empty() or services.busy or not services.entitlement_known
 		body.add_child(buy)
 		if services.price.is_empty():
-			body.add_child(_paragraph("Purchases aren't available in this build. The full game and earned signals are free to play.", 14))
+			body.add_child(_paragraph("Purchases aren't available in this build. The full game and earned pals are free to play.", 14))
 	body.add_child(EchoStyle.button("Restore purchases", services.restore, false, 48))
 	body.add_child(EchoStyle.spacer(2, true))
 
@@ -673,7 +685,7 @@ func _store_changed() -> void:
 func show_settings() -> void:
 	_new_page("settings", 12)
 	_header("SETTINGS", show_home)
-	body.add_child(EchoStyle.label("Your kind of flow.", 36, EchoStyle.TEXT, true))
+	body.add_child(EchoStyle.label("Make yourself comfy.", 36, EchoStyle.TEXT, true))
 	body.add_child(_paragraph("Make the experience comfortable for you.", 15))
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -691,7 +703,7 @@ func show_settings() -> void:
 	if not str(metadata.get("support_email", "")).is_empty():
 		content.add_child(EchoStyle.button("Contact " + str(metadata.developer), func() -> void: OS.shell_open("mailto:" + str(metadata.support_email))))
 	content.add_child(EchoStyle.button("Restore purchases", services.restore))
-	content.add_child(EchoStyle.label("PROJECT ECHO  /  0.1.0  /  RULES v1", 10, EchoStyle.MUTED))
+	content.add_child(EchoStyle.label("PROJECT ECHO  /  0.2.0  /  RULES v1", 10, EchoStyle.MUTED))
 
 func _setting_row(parent: Node, key: String, title: String, description: String) -> void:
 	var panel := _panel(parent)
@@ -706,6 +718,7 @@ func _setting_row(parent: Node, key: String, title: String, description: String)
 		profile.save()
 		audio.apply(profile.data.settings)
 		services.set_analytics(profile.data.settings.analytics)
+		EchoStyle.reduced_motion = profile.data.settings.reduced_motion
 		if profile.data.settings.music:
 			audio.begin_music()
 		show_settings(), profile.data.settings[key], 44)
@@ -739,9 +752,9 @@ func show_privacy() -> void:
 	scroll.add_child(content)
 	content.add_child(EchoStyle.label("Designed for your downtime.", 25, EchoStyle.TEXT, true))
 	content.add_child(EchoStyle.label("Made by " + str(metadata.developer), 16, EchoStyle.MINT, true))
-	for paragraph in ["The core game works offline. Scores, settings, and earned cosmetics are stored on your device. There is no player account, chat, advertising, or public leaderboard.", "Optional analytics is off by default. When enabled in a connected release, Firebase receives events such as tutorial completion, runs, retries, and sharing. We do not send your movement history or request your name, contacts, microphone, or location.", "In releases with purchases enabled, Google Play and RevenueCat process purchases and anonymous entitlement records so that you can restore the Supporter Pack. Payment details are handled by the store.", "Turning analytics off stops future usage events. Uninstalling removes local progress; purchased cosmetics can be restored using the same Google Play account. Android may report technical diagnostics through its own platform settings.", "Project ECHO uses Godot Engine (MIT), Inter and Space Grotesk (SIL Open Font License). The geometric artwork and synthesized audio were created for this project. Full notices are bundled with the source."]:
+	for paragraph in ["The core game works offline. Scores, settings, and earned cosmetics are stored on your device. There is no player account, chat, advertising, or public leaderboard.", "Optional analytics is off by default. When enabled in a connected release, Firebase receives events such as tutorial completion, runs, retries, and sharing. We do not send your movement history or request your name, contacts, microphone, or location.", "In releases with purchases enabled, Google Play and RevenueCat process purchases and anonymous entitlement records so that you can restore the Supporter Pack. Payment details are handled by the store.", "Turning analytics off stops future usage events. Uninstalling removes local progress; purchased cosmetics can be restored using the same Google Play account. Android may report technical diagnostics through its own platform settings.", "Project ECHO uses Godot Engine (MIT), Inter, Nunito and Space Grotesk (SIL Open Font License). The geometric artwork and synthesized audio were created for this project. Full notices are bundled with the source."]:
 		content.add_child(_paragraph(paragraph, 16))
-	content.add_child(EchoStyle.label("DEVELOPMENT BUILD · 0.1.0", 11, EchoStyle.MINT))
+	content.add_child(EchoStyle.label("DEVELOPMENT BUILD · 0.2.0", 11, EchoStyle.MINT))
 	content.add_child(EchoStyle.button("Open-source licences", show_licences))
 	if str(metadata.get("privacy_url", "")).begins_with("https://"):
 		content.add_child(EchoStyle.button("Privacy policy online", func() -> void: OS.shell_open(str(metadata.privacy_url))))
@@ -755,7 +768,7 @@ func show_licences() -> void:
 	text.add_theme_font_override("normal_font", EchoStyle.body)
 	text.add_theme_font_size_override("normal_font_size", 13)
 	text.add_theme_color_override("default_color", EchoStyle.MUTED)
-	for path in ["res://assets/licenses/godot-license.txt", "res://assets/licenses/godot-copyright.txt", "res://assets/fonts/Inter-OFL.txt", "res://assets/fonts/SpaceGrotesk-OFL.txt", "res://assets/licenses/revenuecat-license.txt", "res://assets/licenses/apache-2.0.txt"]:
+	for path in ["res://assets/licenses/godot-license.txt", "res://assets/licenses/godot-copyright.txt", "res://assets/fonts/Inter-OFL.txt", "res://assets/fonts/Nunito-OFL.txt", "res://assets/fonts/SpaceGrotesk-OFL.txt", "res://assets/licenses/revenuecat-license.txt", "res://assets/licenses/apache-2.0.txt"]:
 		if FileAccess.file_exists(path):
 			text.text += path.get_file() + "\n\n" + FileAccess.get_file_as_string(path) + "\n\n"
 	body.add_child(text)
@@ -767,7 +780,7 @@ func _modal(eyebrow: String, title: String) -> VBoxContainer:
 	overlay.z_index = 20
 	add_child(overlay)
 	var shade := ColorRect.new()
-	shade.color = Color(0.015, 0.025, 0.05, 0.93)
+	shade.color = Color(0.20, 0.17, 0.25, 0.65)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(shade)
 	var center := CenterContainer.new()
@@ -775,7 +788,7 @@ func _modal(eyebrow: String, title: String) -> VBoxContainer:
 	overlay.add_child(center)
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size.x = minf(430, get_viewport_rect().size.x - 40)
-	panel.add_theme_stylebox_override("panel", EchoStyle.box(Color("122132"), 24))
+	panel.add_theme_stylebox_override("panel", EchoStyle.box(EchoStyle.PANEL, 24))
 	center.add_child(panel)
 	var content := EchoStyle.vbox(18)
 	panel.add_child(content)
@@ -798,7 +811,7 @@ func _toast(text: String) -> void:
 	toast = EchoStyle.label(text, 14, EchoStyle.TEXT)
 	toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast.add_theme_stylebox_override("normal", EchoStyle.box(Color("233648"), 12, Color("527084")))
+	toast.add_theme_stylebox_override("normal", EchoStyle.box(EchoStyle.PANEL, 12, EchoStyle.BORDER))
 	toast.z_index = 50
 	toast.position = Vector2((get_viewport_rect().size.x - 450) / 2, 16)
 	toast.size = Vector2(450, 60)

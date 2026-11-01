@@ -16,18 +16,18 @@ Category: Games / Arcade. Initial language: English. Intended audience: older te
 
 Your past is catching up.
 
-Steer a glowing signal through a midnight arena. Collect the gold sparks to keep moving. Every eight seconds, an echo appears and repeats the route you took earlier.
+Steer Pip through a playful paper arena. Collect the gold sparks to keep moving. Every eight seconds, an echo appears and repeats the route you took earlier.
 
 The challenge grows from your own decisions. That comfortable loop can become your next trap. Leave room, change direction, and find your way through.
 
 **ONE THUMB. ONE MORE TRY.**
 Simple steering, short runs, and an instant restart. Each new echo raises the points you earn from every spark.
 
-**A NEW DAILY SIGNAL**
+**A NEW DAILY CHASE**
 Everyone gets the same daily spark sequence. Try as often as you like, improve your own best, and share a score card with friends.
 
 **FIND YOUR SIGNAL**
-Unlock new looks by collecting sparks. The optional, permanent Supporter Pack adds four signals, two arena themes and another sound palette. Every score is earned through skill.
+Meet new pals and unlock playful hats by collecting sparks. The optional, permanent Supporter Pack adds four pals, two arena themes and another sound palette. Every score is earned through skill.
 
 **PLAY YOUR WAY**
 The core game works offline. There are no forced ads, no energy timers and no required account. Adjust music, sound and vibration, or use reduced motion and higher contrast.

@@ -8,6 +8,7 @@ Godot Engine is distributed under the MIT licence. Copyright (c) 2014-present Go
 
 ## Fonts
 
+- **Nunito**, Vernon Adams and contributors — SIL Open Font License 1.1. Full licence: `assets/fonts/Nunito-OFL.txt`.
 - **Inter**, Rasmus Andersson and contributors — SIL Open Font License 1.1. Full licence: `assets/fonts/Inter-OFL.txt`.
 - **Space Grotesk**, Florian Karsten and contributors — SIL Open Font License 1.1. Full licence: `assets/fonts/SpaceGrotesk-OFL.txt`.
 
