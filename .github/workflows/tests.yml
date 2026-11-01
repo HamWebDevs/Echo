@@ -1,0 +1,19 @@
+name: Game checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Godot
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 https://github.com/godotengine/godot/releases/download/4.6.3-stable/Godot_v4.6.3-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp/echo-godot
+          echo 'f64d4ed19fc9df9440321653fcc80df8c6e365ba7b6de0a29e2cfa9fa71bfeb3  /tmp/echo-godot/Godot_v4.6.3-stable_linux.x86_64' | sha256sum --check
+          sudo install -m 755 /tmp/echo-godot/Godot_v4.6.3-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Core and UI checks
+        run: bash tools/test.sh

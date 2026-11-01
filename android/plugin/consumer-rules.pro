@@ -1,0 +1,2 @@
+-keep class com.projectecho.services.EchoServices { *; }
+-keepclassmembers class * { @org.godotengine.godot.plugin.UsedByGodot <methods>; }

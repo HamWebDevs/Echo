@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <style>@font-face{font-family:Space;src:url('../fonts/SpaceGrotesk.ttf')}text{font-family:Space,Arial,sans-serif}</style>
+    <radialGradient id="halo"><stop stop-color="#173b42" stop-opacity=".7"/><stop offset="1" stop-color="#080e1b" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1024" height="500" fill="#080e1b"/>
+  <ellipse cx="770" cy="260" rx="320" ry="290" fill="url(#halo)"/>
+  <text x="65" y="100" fill="#72f5cf" font-size="17" letter-spacing="4">OUTRUN YOURSELF</text>
+  <text x="55" y="265" fill="#edf5fa" font-size="150" font-weight="600">ECHO</text>
+  <text x="65" y="325" fill="#a8b8cc" font-size="28">Your past is catching up.</text>
+  <text x="65" y="439" fill="#8095ad" font-size="14" letter-spacing="2">AN INDEPENDENT GAME BY HAMWEBDEV</text>
+  <path d="M652 322C534 180 698 106 797 219S1000 375 917 179 734 137 652 322Z" fill="none" stroke="#72f5cf" stroke-opacity=".07" stroke-width="28"/>
+  <path d="M652 322C534 180 698 106 797 219S1000 375 917 179 734 137 652 322Z" fill="none" stroke="#72f5cf" stroke-opacity=".25" stroke-width="3"/>
+  <path d="M653 322C617 275 605 236 618 202" fill="none" stroke="#72f5cf" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="618" cy="202" r="33" fill="#72f5cf" fill-opacity=".06"/>
+  <circle cx="618" cy="202" r="19" fill="#102c35" stroke="#72f5cf" stroke-width="5"/>
+  <circle cx="618" cy="202" r="6" fill="#72f5cf"/>
+  <path d="m685 133 16 18-16 18-16-18zM856 246l16 18-16 18-16-18zM921 217l16 18-16 18-16-18z" fill="#18223a" stroke="#b49aff" stroke-width="3"/>
+  <path d="m739 164 4 12 12 4-12 4-4 12-4-12-12-4 12-4z" fill="#ffcf83"/>
+</svg>
