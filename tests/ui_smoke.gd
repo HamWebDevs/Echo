@@ -43,6 +43,15 @@ func _run() -> void:
 	Input.parse_input_event(release)
 	await process_frame
 	check(app.state == "collection", "real screen-touch events activate menu buttons")
+	app._show_pal(1)
+	await process_frame
+	check(is_instance_valid(app.overlay) and app.profile.data.skin == 0, "previewing a locked pal does not change the selected pal")
+	check(not app._equip_skin(1), "locked pal cannot be equipped from its preview")
+	app.profile.data.lifetime_sparks = 10
+	check(app._equip_skin(1) and app.profile.data.skin == 1, "earned pal can be equipped after confirmation")
+	var restored := ProfileStore.new("user://ui-smoke-profile.json")
+	restored.load_profile()
+	check(restored.data.skin == 1 and restored.data.lifetime_sparks == 10, "equipping preserves collected sparks and survives a reload")
 	app.show_home()
 	app.profile.data.skin = 10
 	app.profile.data.theme = 2
@@ -51,8 +60,10 @@ func _run() -> void:
 	check(app.profile.data.skin == 10 and app.profile.data.theme == 2 and app.profile.data.sound_set == 1, "price callback cannot revoke an unresolved entitlement")
 	app.services._on_entitlement(true)
 	check(app.profile.data.skin == 10 and app.services.entitlement_known, "confirmed ownership preserves supporter selections")
+	app._show_pal(10)
 	app.services._on_entitlement(false)
 	check(app.profile.data.skin == 0 and app.profile.data.theme == 0 and app.profile.data.sound_set == 0, "confirmed revocation resets supporter selections")
+	check(not app._equip_skin(10), "an open preview cannot equip a pal after ownership is revoked")
 	app.services.price = ""
 	app.profile.data.tutorial_complete = true
 	app.start_run(RunConfig.daily("2026-10-30"))
@@ -70,13 +81,21 @@ func _run() -> void:
 	check(app.resume_time == 3, "resume protects player with countdown")
 	app._process(3.1)
 	check(not app.paused and app.resume_time <= 0, "countdown resumes run")
+	app.profile.data.lifetime_sparks = 24
 	app.run.death_cause = "wall"
 	app.run.alive = false
 	app._end_run()
 	await process_frame
 	check(app.state == "results" and app.profile.data.runs == 1, "death records once and shows results")
-	app._retry()
-	check(app.state == "game" and app.run.config.daily_date == "2026-10-30", "daily retry preserves the starting challenge")
+	check(app.result_info.unlocked_indices == [2], "results identify the pal earned by this completed run")
+	var reward_button: Button
+	for control in app.page.find_children("*", "Button", true, false):
+		if control.text == "PLAY WITH PETAL":
+			reward_button = control
+	if is_instance_valid(reward_button):
+		reward_button.pressed.emit()
+	check(is_instance_valid(reward_button) and app.profile.data.skin == 2, "reward button equips the newly earned pal")
+	check(app.state == "game" and app.run.config.daily_date == "2026-10-30", "reward retry preserves the starting daily challenge")
 	app.pad.direction = Vector2.UP
 	app._physics_process(1.0 / 60)
 	app._finish_and_home()

@@ -97,13 +97,13 @@ func _draw_history(at_tick: float, color: Color, length_ticks: int) -> void:
 		draw_polyline(points, Color(color, 0.4), 2.5, true)
 
 func _draw_echo(at: Vector2, color: Color, radius: float) -> void:
-	CartoonArt.buddy(self, at, radius, 0, clock + 1.2, true, color.a)
+	CartoonArt.buddy(self, at, radius, 0, clock + 1.2, true, color.a, false, high_contrast)
 
 func _draw_spark(at: Vector2, _color: Color, radius: float) -> void:
 	CartoonArt.star(self, at, radius, sin(clock * 3) * 0.12)
 
 func _draw_player(at: Vector2, _color: Color, radius: float) -> void:
-	CartoonArt.buddy(self, at, radius, skin, clock, false, 1.0, run != null and not run.alive)
+	CartoonArt.buddy(self, at, radius, skin, clock, false, 1.0, run != null and not run.alive, high_contrast)
 
 func _demo_position(angle: float) -> Vector2:
 	return size * Vector2(0.5, 0.48) + Vector2(cos(angle) * size.x * 0.32, sin(angle * 2) * size.y * 0.23)

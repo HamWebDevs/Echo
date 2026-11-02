@@ -504,7 +504,16 @@ func show_results() -> void:
 	_header("DAILY CHASE  /  " + run.config.daily_date if run.config.mode == "daily" else "ENDLESS  /  RUN COMPLETE", show_home)
 	body.add_child(EchoStyle.spacer(12, true))
 	body.add_child(EchoStyle.label("NEW PERSONAL BEST" if result_info.get("new_best", false) else "WHOOPS! SHALL WE GO AGAIN?", 12, EchoStyle.MINT))
-	body.add_child(EchoStyle.label(str(run.score), 106, EchoStyle.TEXT, true))
+	var score_row := EchoStyle.hbox(12)
+	var total := EchoStyle.label(str(run.score), 80 if str(run.score).length() < 7 else 48, EchoStyle.TEXT, true)
+	total.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	total.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	score_row.add_child(total)
+	var reaction := _portrait(profile.data.skin, result_info.get("new_best", false))
+	reaction.custom_minimum_size.x = 140
+	reaction.surprised = not result_info.get("new_best", false)
+	score_row.add_child(reaction)
+	body.add_child(score_row)
 	var row := EchoStyle.hbox(10)
 	for stat in [[str(run.sparks), "SPARKS"], ["%.1fs" % run.elapsed(), "SURVIVED"], [str(run.echo_count()), "ECHOES"]]:
 		var column := _panel(row)
@@ -517,9 +526,23 @@ func show_results() -> void:
 	insight.add_child(_paragraph(_death_detail(), 15))
 	insight.add_child(EchoStyle.button("WATCH THE LAST MOMENT  ↗", _show_replay, false, 45))
 	var unlock := _panel(body, Color("e3f1de"))
-	var next := profile.next_unlock()
-	unlock.add_child(EchoStyle.label("A NEW PAL JUST ARRIVED" if result_info.get("unlocked", false) else "YOUR COLLECTION IS GROWING", 11, EchoStyle.MINT))
-	unlock.add_child(_paragraph("All earned pals unlocked. Keep chasing your best." if next < 0 else "%d / %d lifetime sparks to your next pal." % [profile.data.lifetime_sparks, next], 15))
+	var arrivals: Array = result_info.get("unlocked_indices", [])
+	if not arrivals.is_empty():
+		var newest := int(arrivals[-1])
+		unlock.add_child(EchoStyle.label("LOOK WHO JUST ARRIVED!", 11, EchoStyle.MINT))
+		unlock.add_child(_paragraph("%s is ready for an adventure." % ProfileStore.SKIN_NAMES[newest], 17, EchoStyle.TEXT))
+		unlock.add_child(EchoStyle.button("PLAY WITH " + str(ProfileStore.SKIN_NAMES[newest]).to_upper(), func() -> void:
+			if _equip_skin(newest):
+				_retry(), true, 44))
+	else:
+		var next_index := profile.unlocked_count()
+		unlock.add_child(EchoStyle.label("YOUR NEXT LITTLE PAL" if next_index < 9 else "THE WHOLE GANG IS HERE", 11, EchoStyle.MINT))
+		if next_index < 9:
+			var left := int(ProfileStore.THRESHOLDS[next_index]) - int(profile.data.lifetime_sparks)
+			unlock.add_child(_paragraph("%s · %d more sparks" % [ProfileStore.SKIN_NAMES[next_index], left], 17, EchoStyle.TEXT))
+			_add_unlock_meter(unlock, next_index)
+		else:
+			unlock.add_child(_paragraph("All nine earned pals unlocked. Pick a favourite in your collection.", 15))
 	body.add_child(EchoStyle.spacer(4, true))
 	body.add_child(EchoStyle.button("ONE MORE RUN     →", _retry, true, 64))
 	var actions := EchoStyle.hbox()
@@ -539,6 +562,8 @@ func _show_replay() -> void:
 	var content := _modal("YOUR LAST 1.5 SECONDS", _death_title())
 	replay_view = ArenaView.new()
 	replay_view.run = run
+	replay_view.skin = profile.data.skin
+	replay_view.arena_theme = profile.data.theme if services.supporter else 0
 	replay_view.high_contrast = profile.data.settings.high_contrast
 	replay_view.reduced_motion = profile.data.settings.reduced_motion
 	replay_view.custom_minimum_size = Vector2(350, 350)
@@ -559,6 +584,7 @@ func _share() -> void:
 	var card := ScoreCard.new()
 	card.size = Vector2(1080, 1350)
 	card.result = run.result()
+	card.skin = profile.data.skin
 	for tick in range(maxi(0, run.tick - 1200), run.tick + 1, 8):
 		card.route.append(run.position_at(tick))
 	viewport.add_child(card)
@@ -604,19 +630,64 @@ func _add_skin(parent: Node, index: int) -> void:
 	tile.index = index
 	tile.available = profile.skin_available(index, services.supporter)
 	tile.equipped = profile.data.skin == index and tile.available
-	tile.subtitle = "EQUIPPED" if tile.equipped else ("TAP TO EQUIP" if tile.available else ("SUPPORTER" if index >= 9 else "%d SPARKS" % ProfileStore.THRESHOLDS[index]))
+	tile.subtitle = "EQUIPPED" if tile.equipped else ("MEET THIS PAL" if tile.available else ("SUPPORTER" if index >= 9 else "%d SPARKS" % ProfileStore.THRESHOLDS[index]))
 	tile.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tile.pressed.connect(func() -> void:
-		if tile.available:
-			profile.data.skin = index
-			profile.save()
-			audio.play("click")
-			show_collection()
-		elif index >= 9:
-			show_supporter()
-		else:
-			_toast("Collect %d more sparks to unlock %s." % [ProfileStore.THRESHOLDS[index] - profile.data.lifetime_sparks, ProfileStore.SKIN_NAMES[index]]))
+	tile.pressed.connect(func() -> void: _show_pal(index))
 	parent.add_child(tile)
+
+func _portrait(index: int, celebrate: bool = false) -> BuddyPortrait:
+	var portrait := BuddyPortrait.new()
+	portrait.skin = index
+	portrait.celebrate = celebrate
+	portrait.reduced_motion = profile.data.settings.reduced_motion
+	return portrait
+
+func _add_unlock_meter(parent: Node, index: int) -> void:
+	var progress := ProgressBar.new()
+	progress.max_value = ProfileStore.THRESHOLDS[index]
+	progress.value = mini(profile.data.lifetime_sparks, ProfileStore.THRESHOLDS[index])
+	progress.show_percentage = false
+	progress.custom_minimum_size.y = 10
+	var track := EchoStyle.box(Color("c7d9bc"), 5, EchoStyle.BORDER, 0)
+	var fill := EchoStyle.box(EchoStyle.MINT, 5, EchoStyle.MINT, 0)
+	for style in [track, fill]:
+		style.content_margin_top = 0
+		style.content_margin_bottom = 0
+	progress.add_theme_stylebox_override("background", track)
+	progress.add_theme_stylebox_override("fill", fill)
+	parent.add_child(progress)
+
+func _show_pal(index: int) -> void:
+	if index < 0 or index >= ProfileStore.SKIN_NAMES.size():
+		return
+	var available := profile.skin_available(index, services.supporter)
+	var content := _modal("MEET THE GANG", ProfileStore.SKIN_NAMES[index])
+	content.add_child(_portrait(index, available))
+	var stories := ["Small pal. Big curiosity. Pip is always up for one more lap.", "Captain of the puddle patrol. Never leaves without a hat.", "Wears a daisy. Takes the scenic route.", "Soft on the outside. Surprisingly competitive.", "Brought a party hat. Forgot to invite the copycats.", "A peachy little painter in a favourite beret.", "A tiny sprout with some very big plans.", "Sunshine in a visor. Forecast: more stars.", "Frosting, a cherry, and absolutely no brakes.", "Goggles on. Ready to dive into the next chase.", "A night owl with a moonflower crown.", "Dressed for dinner. Staying for the adventure.", "A small crown for a very important pickle."]
+	content.add_child(_paragraph(stories[index], 17, EchoStyle.TEXT))
+	if available:
+		content.add_child(EchoStyle.button("LET'S GO, " + str(ProfileStore.SKIN_NAMES[index]).to_upper(), func() -> void: _equip_skin(index), true, 54))
+	elif index < 9:
+		content.add_child(_paragraph("%d / %d lifetime sparks. Keep collecting to welcome %s." % [profile.data.lifetime_sparks, ProfileStore.THRESHOLDS[index], ProfileStore.SKIN_NAMES[index]], 14))
+		_add_unlock_meter(content, index)
+	else:
+		content.add_child(_paragraph("Part of the optional Supporter Pack. Same movement and hitbox as every other pal.", 14))
+		content.add_child(EchoStyle.button("View Supporter Pack", show_supporter, false, 48))
+	content.add_child(EchoStyle.button("Back to the gang", _close_modal, false, 44))
+
+func _equip_skin(index: int) -> bool:
+	# Recheck ownership at confirmation: an entitlement may change while a preview is open.
+	if not profile.skin_available(index, services.supporter):
+		_toast("This pal hasn't been unlocked yet.")
+		return false
+	profile.data.skin = index
+	profile.save()
+	audio.play("click")
+	if state == "collection":
+		show_collection()
+	else:
+		_close_modal()
+	return true
 
 func show_supporter() -> void:
 	_new_page("supporter", 16)
@@ -703,7 +774,7 @@ func show_settings() -> void:
 	if not str(metadata.get("support_email", "")).is_empty():
 		content.add_child(EchoStyle.button("Contact " + str(metadata.developer), func() -> void: OS.shell_open("mailto:" + str(metadata.support_email))))
 	content.add_child(EchoStyle.button("Restore purchases", services.restore))
-	content.add_child(EchoStyle.label("PROJECT ECHO  /  0.2.0  /  RULES v1", 10, EchoStyle.MUTED))
+	content.add_child(EchoStyle.label("PROJECT ECHO  /  0.3.0  /  RULES v1", 10, EchoStyle.MUTED))
 
 func _setting_row(parent: Node, key: String, title: String, description: String) -> void:
 	var panel := _panel(parent)
@@ -754,7 +825,7 @@ func show_privacy() -> void:
 	content.add_child(EchoStyle.label("Made by " + str(metadata.developer), 16, EchoStyle.MINT, true))
 	for paragraph in ["The core game works offline. Scores, settings, and earned cosmetics are stored on your device. There is no player account, chat, advertising, or public leaderboard.", "Optional analytics is off by default. When enabled in a connected release, Firebase receives events such as tutorial completion, runs, retries, and sharing. We do not send your movement history or request your name, contacts, microphone, or location.", "In releases with purchases enabled, Google Play and RevenueCat process purchases and anonymous entitlement records so that you can restore the Supporter Pack. Payment details are handled by the store.", "Turning analytics off stops future usage events. Uninstalling removes local progress; purchased cosmetics can be restored using the same Google Play account. Android may report technical diagnostics through its own platform settings.", "Project ECHO uses Godot Engine (MIT), Inter, Nunito and Space Grotesk (SIL Open Font License). The geometric artwork and synthesized audio were created for this project. Full notices are bundled with the source."]:
 		content.add_child(_paragraph(paragraph, 16))
-	content.add_child(EchoStyle.label("DEVELOPMENT BUILD · 0.2.0", 11, EchoStyle.MINT))
+	content.add_child(EchoStyle.label("DEVELOPMENT BUILD · 0.3.0", 11, EchoStyle.MINT))
 	content.add_child(EchoStyle.button("Open-source licences", show_licences))
 	if str(metadata.get("privacy_url", "")).begins_with("https://"):
 		content.add_child(EchoStyle.button("Privacy policy online", func() -> void: OS.shell_open(str(metadata.privacy_url))))
@@ -821,10 +892,13 @@ func _toast(text: String) -> void:
 func _prepare_capture() -> void:
 	match capture_args.get("screen", "home"):
 		"collection": show_collection()
+		"pal":
+			show_collection()
+			_show_pal(6)
 		"settings": show_settings()
 		"how_to": show_how_to()
 		"supporter": show_supporter()
-		"game", "daily", "results":
+		"game", "daily", "results", "unlock":
 			start_run(RunConfig.daily(RunConfig.utc_date()) if capture_args.screen == "daily" else RunConfig.endless(423))
 			# Drive real simulation toward targets for a reproducible visual fixture.
 			for i in range(1200):
@@ -832,12 +906,14 @@ func _prepare_capture() -> void:
 				run.step(DemoPilot.direction(run))
 			paused = true
 			_update_hud()
-			if capture_args.screen == "results":
+			if capture_args.screen in ["results", "unlock"]:
 				while run.alive and run.tick < 7200:
 					run.step(run.spark - run.player)
 				if run.alive:
 					run._die("ended")
-				result_info = {"new_best": false}
+				# A fresh-profile fixture using only sparks earned by this simulated run.
+				profile.data.lifetime_sparks = run.sparks
+				result_info = {"new_best": run.score > 0, "unlocked_indices": range(1, profile.unlocked_count())}
 				show_results()
 	await get_tree().process_frame
 	await get_tree().process_frame

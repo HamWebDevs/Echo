@@ -4,9 +4,9 @@ A portrait Android arcade game: collect sparks and dodge delayed echoes of your 
 
 Project ECHO is a development name, not a cleared commercial brand. The package ID is `com.hamwebdev.echo`.
 
-## Cartoon preview 0.2.0
+## Cartoon preview 0.3.0
 
-Pip and the copycats replace the neon presentation with chunky outlines, rounded Nunito lettering, playful hats, blinking faces, wobbling stars, button squash, score bounces and collection confetti. Reduced motion disables decorative animation. Existing saves and gameplay rules remain compatible. See [preview notes](docs/PREVIEW.md).
+Meet the gang through animated portraits and character stories. Earn a new pal and equip it straight from the results screen, or follow named progress toward the next unlock. The cartoon style includes chunky outlines, rounded Nunito lettering, distinct accessories, blinking faces, wobbling stars, button squash, score bounces and collection confetti. Reduced motion disables decorative animation. Existing saves and gameplay rules remain compatible. See [preview notes](docs/PREVIEW.md).
 
 The **Android preview download** GitHub workflow builds installable artifacts and attaches them to a draft release using GitHub’s own token. It can be run from the Actions tab. CI generates a temporary development key; builds from different signing sources cannot update one another in place.
 

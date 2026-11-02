@@ -1,3 +1,11 @@
+# Pal progression preview 0.3.0
+
+Prepared 2 November 2026. **44 core checks and 28 UI integration checks pass (72 total)**. New coverage verifies multiple pal unlocks in one run, no repeat announcement on the next run, saved equipment selection, refusal to equip locked/invalid characters, and rechecking purchase access after a preview opens. The rules version and save schema remain unchanged.
+
+The UI adds animated portraits with a reduced-motion alternative, character previews, named unlock progress and immediate equip-and-play for newly earned pals. High-contrast rendering now applies to the characters themselves. Replay and share cards preserve the selected look.
+
+Current screenshots are actual browser renders. The unlock screenshot is a fresh-profile fixture whose progress comes from the simulated run shown. Showcase clips use scripted steering. The older validation records below remain historical evidence; phone performance, native sharing, purchases and player retention still require real-device/player testing.
+
 # Cartoon preview 0.2.0
 
 The cartoon presentation retains the same rules and save schema. All 40 core checks and 21 UI checks pass after the character, typography, interaction-animation and audio changes. Current screenshots and clips are generated from the real browser build. Physical-device validation, native sharing and billing remain outstanding. APK sizes and hashes for each delivered build are recorded in its manifest.

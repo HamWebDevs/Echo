@@ -43,5 +43,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view v0.2.0-preview >/dev/null 2>&1 || gh release create v0.2.0-preview --target "$GITHUB_SHA" --draft --prerelease --title 'ECHO 0.2.0 — cartoon preview' --notes-file docs/PREVIEW.md
-          gh release upload v0.2.0-preview build/android/project-echo-preview.apk build/android/project-echo-unsigned.aab dist/*.zip dist/manifest.json --clobber
+          gh release view v0.3.0-preview >/dev/null 2>&1 || gh release create v0.3.0-preview --target "$GITHUB_SHA" --draft --prerelease --title 'ECHO 0.3.0 — cartoon preview' --notes-file docs/PREVIEW.md
+          gh release upload v0.3.0-preview build/android/project-echo-preview.apk build/android/project-echo-unsigned.aab dist/*.zip dist/manifest.json --clobber

@@ -147,5 +147,13 @@ func _test_profile() -> void:
 	recovered.record(daily)
 	check(recovered.best_for(daily.config) == 160 and recovered.data.best == 240, "daily and endless records remain separate")
 	check(recovered.best_for(RunConfig.daily("2026-10-31")) == 0, "new day starts a separate record")
+	check(not recovered.skin_available(-1, true) and not recovered.skin_available(13, true), "invalid pal IDs cannot be selected even with ownership")
+	recovered.data.lifetime_sparks = 9
+	var reward := EchoRun.new()
+	reward.sparks = 1
+	check(recovered.record(reward).unlocked_indices == [1], "crossing a threshold names the newly earned pal")
+	check(recovered.record(reward).unlocked_indices.is_empty(), "the next run does not announce the same unlock again")
+	reward.sparks = 40
+	check(recovered.record(reward).unlocked_indices == [2, 3], "one run can report every newly earned pal")
 	for suffix in ["", ".bak", ".tmp"]:
 		DirAccess.remove_absolute(path + suffix)

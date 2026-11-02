@@ -101,7 +101,7 @@ func record(run: EchoRun) -> Dictionary:
 	else:
 		data.best = maxi(data.best, run.score)
 	save()
-	return {"new_best": run.score > old_best, "previous_best": old_best, "unlocked": unlocked_count() > old_unlocks}
+	return {"new_best": run.score > old_best, "previous_best": old_best, "unlocked": unlocked_count() > old_unlocks, "unlocked_indices": range(old_unlocks, unlocked_count())}
 
 func best_for(config: RunConfig) -> int:
 	if config.mode == "daily":
@@ -116,7 +116,7 @@ func unlocked_count() -> int:
 	return count
 
 func skin_available(index: int, supporter: bool = false) -> bool:
-	return (index < THRESHOLDS.size() and index < unlocked_count()) or (index >= THRESHOLDS.size() and index < SKIN_NAMES.size() and supporter)
+	return index >= 0 and ((index < THRESHOLDS.size() and index < unlocked_count()) or (index >= THRESHOLDS.size() and index < SKIN_NAMES.size() and supporter))
 
 func next_unlock() -> int:
 	for threshold in THRESHOLDS:
