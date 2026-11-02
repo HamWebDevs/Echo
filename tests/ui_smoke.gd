@@ -18,7 +18,7 @@ func _run() -> void:
 	await process_frame
 	app.profile = ProfileStore.new("user://ui-smoke-profile.json")
 	check(app.state == "home", "home loads")
-	for screen in ["show_collection", "show_settings", "show_how_to", "show_privacy", "show_licences", "show_supporter", "show_home"]:
+	for screen in ["show_collection", "show_journal", "show_settings", "show_how_to", "show_privacy", "show_licences", "show_supporter", "show_home"]:
 		app.call(screen)
 		await process_frame
 		check(is_instance_valid(app.page), screen + " creates its UI")
@@ -69,6 +69,7 @@ func _run() -> void:
 	app.start_run(RunConfig.daily("2026-10-30"))
 	await process_frame
 	check(not app.game_started and app.run.tick == 0, "run waits for deliberate steering")
+	check(app.goal_label.text.contains("75"), "daily medal goal is visible before the first move")
 	app.pad.direction = Vector2.UP
 	for i in range(48):
 		app._physics_process(1.0 / 60)

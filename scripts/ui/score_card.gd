@@ -12,7 +12,7 @@ func _draw() -> void:
 	draw_string(EchoStyle.body, Vector2(80, 208), "YOUR PAST IS CATCHING UP.", HORIZONTAL_ALIGNMENT_LEFT, -1, 24, EchoStyle.MUTED)
 	CartoonArt.buddy(self, Vector2(910, 140), 70, skin, 0)
 	draw_line(Vector2(80, 256), Vector2(1000, 256), EchoStyle.BORDER, 2)
-	var mode := "DAILY SIGNAL  /  " + str(result.get("daily_date", "")) if result.get("mode") == "daily" else "ENDLESS  /  PERSONAL RUN"
+	var mode := "DAILY CHASE  /  " + str(result.get("daily_date", "")) if result.get("mode") == "daily" else "ENDLESS  /  PERSONAL RUN"
 	draw_string(EchoStyle.body, Vector2(80, 330), mode, HORIZONTAL_ALIGNMENT_LEFT, -1, 26, EchoStyle.GOLD)
 	draw_string(EchoStyle.display, Vector2(70, 565), str(result.get("score", 0)), HORIZONTAL_ALIGNMENT_LEFT, -1, 216, EchoStyle.TEXT)
 	draw_string(EchoStyle.body, Vector2(80, 630), "%d SPARKS     /     %.1f SECONDS     /     %d ECHOES" % [result.get("sparks",0), result.get("duration",0), result.get("echoes",0)], HORIZONTAL_ALIGNMENT_LEFT, -1, 24, EchoStyle.MUTED)

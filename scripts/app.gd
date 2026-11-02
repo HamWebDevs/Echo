@@ -33,6 +33,7 @@ var screen_clock := 0.0
 var metadata: Dictionary = {"developer": "HamWebDev", "support_email": "", "privacy_url": ""}
 var showcase_mode := ""
 var showcase_started := false
+var goal_label: Label
 
 func _ready() -> void:
 	if FileAccess.file_exists("res://config/app_metadata.json"):
@@ -169,7 +170,7 @@ func show_home() -> void:
 	var demo := ArenaView.new()
 	demo.demo = true
 	demo.reduced_motion = profile.data.settings.reduced_motion
-	demo.custom_minimum_size.y = 213
+	demo.custom_minimum_size.y = 182
 	body.add_child(demo)
 	var stats := _panel(body)
 	var row := EchoStyle.hbox()
@@ -188,9 +189,12 @@ func show_home() -> void:
 	row.add_child(right)
 	stats.add_child(row)
 	body.add_child(EchoStyle.button("PLAY ENDLESS     →", func() -> void: request_start("endless"), true, 64))
-	var daily := EchoStyle.button("THE DAILY CHASE     ↗\n%s  ·  A new route every day" % _friendly_date(), func() -> void: request_start("daily"), false, 76)
+	var daily_best := profile.best_for(RunConfig.daily(RunConfig.utc_date()))
+	var medal := ChallengeBook.daily_medal(daily_best)
+	var daily := EchoStyle.button("THE DAILY CHASE     ↗\n%s  ·  %s" % [_friendly_date(), (medal + " · Best " + str(daily_best)) if not medal.is_empty() else "A new route every day"], func() -> void: request_start("daily"), false, 76)
 	daily.add_theme_font_size_override("font_size", 16)
 	body.add_child(daily)
+	body.add_child(EchoStyle.button("STICKER JOURNAL   ·   %d / %d" % [ChallengeBook.earned(profile.data).size(), ChallengeBook.GOALS.size()], show_journal, false, 46))
 	var navigation := EchoStyle.hbox(8)
 	for entry in [["COLLECTION", show_collection], ["HOW TO PLAY", show_how_to], ["SETTINGS", show_settings]]:
 		var button := EchoStyle.button(entry[0], entry[1], false, 46)
@@ -293,6 +297,9 @@ func start_run(config: RunConfig) -> void:
 	energy_bar.add_theme_stylebox_override("fill", meter_fill)
 	charge_row.add_child(energy_bar)
 	body.add_child(charge_row)
+	goal_label = EchoStyle.label("", 11, EchoStyle.MINT)
+	goal_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.add_child(goal_label)
 	body.add_child(EchoStyle.spacer(1, true))
 	pad = ThumbPad.new()
 	pad.custom_minimum_size.y = 120
@@ -301,6 +308,7 @@ func start_run(config: RunConfig) -> void:
 	help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(help_label)
 	_layout()
+	_update_hud()
 
 func _physics_process(_delta: float) -> void:
 	if state != "game" or run == null or paused or resume_time > 0 or not run.alive:
@@ -311,7 +319,7 @@ func _physics_process(_delta: float) -> void:
 		steering = keyboard
 	if not showcase_mode.is_empty():
 		steering = DemoPilot.direction(run)
-		if showcase_mode == "retry" and run.tick >= 1200:
+		if showcase_mode == "retry" and run.tick >= 360:
 			steering = Vector2.RIGHT
 	if not game_started:
 		if steering == Vector2.ZERO:
@@ -350,7 +358,27 @@ func _physics_process(_delta: float) -> void:
 		return
 	_update_hud()
 
+func _run_goal_text() -> String:
+	if run.config.tutorial:
+		return "A little practice. No pressure."
+	if run.config.mode == "daily":
+		var target := ChallengeBook.daily_target(maxi(run.score, profile.best_for(run.config)))
+		return "GOLD EARNED · Can you beat your best?" if target == 0 else "%s target · %d points" % [ChallengeBook.daily_medal(target).to_upper(), target]
+	var goal := ChallengeBook.next_goal(profile.data)
+	if goal.is_empty():
+		return "The whole journal is yours. Chase your best!"
+	var live := float(profile.data.get(goal.metric, 0))
+	match goal.metric:
+		"run_sparks": live = maxf(live, run.sparks)
+		"longest": live = maxf(live, run.elapsed())
+		"max_echoes": live = maxf(live, run.echo_count())
+		"best_score": live = maxf(live, run.score)
+		"lifetime_sparks": live += run.sparks
+	return "STICKER READY · " + str(goal.title) if live >= goal.target else "NEXT STICKER · " + str(goal.detail)
+
 func _update_hud() -> void:
+	if is_instance_valid(goal_label):
+		goal_label.text = _run_goal_text()
 	if not is_instance_valid(score_label):
 		return
 	score_label.text = "%04d" % run.score
@@ -388,6 +416,8 @@ func _process(delta: float) -> void:
 			utc_today = date
 			if state == "home":
 				show_home()
+			elif state == "journal":
+				show_journal()
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_ESCAPE or event.keycode == KEY_P):
@@ -509,9 +539,10 @@ func show_results() -> void:
 	total.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	total.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	score_row.add_child(total)
-	var reaction := _portrait(profile.data.skin, result_info.get("new_best", false))
+	var earned_pals: Array = result_info.get("unlocked_indices", [])
+	var reaction := _portrait(int(earned_pals[-1]) if not earned_pals.is_empty() else profile.data.skin, result_info.get("new_best", false) or not earned_pals.is_empty())
 	reaction.custom_minimum_size.x = 140
-	reaction.surprised = not result_info.get("new_best", false)
+	reaction.surprised = earned_pals.is_empty() and not result_info.get("new_best", false)
 	score_row.add_child(reaction)
 	body.add_child(score_row)
 	var row := EchoStyle.hbox(10)
@@ -521,6 +552,17 @@ func show_results() -> void:
 		column.add_child(EchoStyle.label(stat[0], 25, EchoStyle.TEXT, true))
 		column.add_child(EchoStyle.label(stat[1], 9, EchoStyle.MUTED))
 	body.add_child(row)
+	var stickers: Array = result_info.get("new_stickers", [])
+	if not stickers.is_empty():
+		var reward_button := EchoStyle.button("%d NEW STICKER%s!  ·  OPEN JOURNAL" % [stickers.size(), "S" if stickers.size() != 1 else ""], show_journal, false, 42)
+		reward_button.add_theme_font_size_override("font_size", 13)
+		body.add_child(reward_button)
+	elif run.config.mode == "daily":
+		var medal := ChallengeBook.daily_medal(run.score)
+		var target := ChallengeBook.daily_target(run.score)
+		body.add_child(_paragraph((medal + " medal!  ") if not medal.is_empty() else "A good start.  ", 15, EchoStyle.GOLD))
+		if target > 0:
+			body.add_child(_paragraph("Next medal: %d points." % target, 13))
 	var insight := _panel(body)
 	insight.add_child(EchoStyle.label(_death_title(), 25, EchoStyle.TEXT, true))
 	insight.add_child(_paragraph(_death_detail(), 15))
@@ -594,6 +636,53 @@ func _share() -> void:
 	services.share_image(image)
 	services.track("share", {"mode": run.config.mode})
 	viewport.queue_free()
+
+func show_journal() -> void:
+	_new_page("journal", 12)
+	_header("YOUR STICKER JOURNAL", show_home)
+	var completed := ChallengeBook.earned(profile.data)
+	body.add_child(EchoStyle.label("Little wins. Big smiles.", 32, EchoStyle.TEXT, true))
+	body.add_child(_paragraph("%d / %d stickers earned. Your progress stays with you; these goals never expire." % [completed.size(), ChallengeBook.GOALS.size()], 15))
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	body.add_child(scroll)
+	var content := EchoStyle.vbox(14)
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(content)
+	var today := RunConfig.daily(RunConfig.utc_date())
+	var best := profile.best_for(today)
+	var daily := _panel(content, Color("f9e8ba"))
+	daily.add_child(EchoStyle.label("TODAY'S MEDAL CHASE", 14, EchoStyle.GOLD, true))
+	daily.add_child(_paragraph("Bronze 75 · Silver 200 · Gold 450
+Your best today: %d. Unlimited attempts, one shared route." % best, 14, EchoStyle.TEXT))
+	daily.add_child(EchoStyle.button("TRY TODAY'S ROUTE", func() -> void: request_start("daily"), true, 48))
+	for goal in ChallengeBook.GOALS:
+		var achieved: bool = goal.id in completed
+		var card := _panel(content, Color("e3f1de") if achieved else EchoStyle.PANEL)
+		var row := EchoStyle.hbox(12)
+		var portrait := _portrait(goal.pal, achieved)
+		portrait.custom_minimum_size = Vector2(80, 90)
+		portrait.reduced_motion = true
+		portrait.modulate.a = 1.0 if achieved else 0.5
+		row.add_child(portrait)
+		var description := EchoStyle.vbox(5)
+		description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		description.add_child(_paragraph(goal.title, 18, EchoStyle.TEXT))
+		description.add_child(_paragraph(goal.detail, 13))
+		description.add_child(EchoStyle.label("STICKER EARNED" if achieved else "%d / %d" % [ChallengeBook.progress(profile.data, goal), goal.target], 11, EchoStyle.MINT))
+		row.add_child(description)
+		card.add_child(row)
+	var history := _panel(content)
+	history.add_child(EchoStyle.label("YOUR LAST FIVE RUNS", 14, EchoStyle.TEXT, true))
+	if profile.data.recent_runs.is_empty():
+		history.add_child(_paragraph("Your next completed run starts the story.", 14))
+	else:
+		var recent: Array = profile.data.recent_runs.duplicate()
+		recent.reverse()
+		for entry in recent:
+			history.add_child(EchoStyle.label("%s · %d points" % ["Daily chase" if entry.mode == "daily" else "Endless", entry.score], 14, EchoStyle.MUTED))
+	body.add_child(EchoStyle.button("PLAY FOR A NEW BEST" if completed.size() == ChallengeBook.GOALS.size() else "CHASE THE NEXT STICKER", func() -> void: request_start("endless"), true, 54))
 
 func show_collection() -> void:
 	_new_page("collection", 14)
@@ -774,7 +863,7 @@ func show_settings() -> void:
 	if not str(metadata.get("support_email", "")).is_empty():
 		content.add_child(EchoStyle.button("Contact " + str(metadata.developer), func() -> void: OS.shell_open("mailto:" + str(metadata.support_email))))
 	content.add_child(EchoStyle.button("Restore purchases", services.restore))
-	content.add_child(EchoStyle.label("PROJECT ECHO  /  0.3.0  /  RULES v1", 10, EchoStyle.MUTED))
+	content.add_child(EchoStyle.label("PROJECT ECHO  /  0.4.0  /  RULES v1", 10, EchoStyle.MUTED))
 
 func _setting_row(parent: Node, key: String, title: String, description: String) -> void:
 	var panel := _panel(parent)
@@ -825,7 +914,7 @@ func show_privacy() -> void:
 	content.add_child(EchoStyle.label("Made by " + str(metadata.developer), 16, EchoStyle.MINT, true))
 	for paragraph in ["The core game works offline. Scores, settings, and earned cosmetics are stored on your device. There is no player account, chat, advertising, or public leaderboard.", "Optional analytics is off by default. When enabled in a connected release, Firebase receives events such as tutorial completion, runs, retries, and sharing. We do not send your movement history or request your name, contacts, microphone, or location.", "In releases with purchases enabled, Google Play and RevenueCat process purchases and anonymous entitlement records so that you can restore the Supporter Pack. Payment details are handled by the store.", "Turning analytics off stops future usage events. Uninstalling removes local progress; purchased cosmetics can be restored using the same Google Play account. Android may report technical diagnostics through its own platform settings.", "Project ECHO uses Godot Engine (MIT), Inter, Nunito and Space Grotesk (SIL Open Font License). The geometric artwork and synthesized audio were created for this project. Full notices are bundled with the source."]:
 		content.add_child(_paragraph(paragraph, 16))
-	content.add_child(EchoStyle.label("DEVELOPMENT BUILD · 0.3.0", 11, EchoStyle.MINT))
+	content.add_child(EchoStyle.label("DEVELOPMENT BUILD · 0.4.0", 11, EchoStyle.MINT))
 	content.add_child(EchoStyle.button("Open-source licences", show_licences))
 	if str(metadata.get("privacy_url", "")).begins_with("https://"):
 		content.add_child(EchoStyle.button("Privacy policy online", func() -> void: OS.shell_open(str(metadata.privacy_url))))
@@ -892,6 +981,7 @@ func _toast(text: String) -> void:
 func _prepare_capture() -> void:
 	match capture_args.get("screen", "home"):
 		"collection": show_collection()
+		"journal": show_journal()
 		"pal":
 			show_collection()
 			_show_pal(6)
@@ -913,7 +1003,11 @@ func _prepare_capture() -> void:
 					run._die("ended")
 				# A fresh-profile fixture using only sparks earned by this simulated run.
 				profile.data.lifetime_sparks = run.sparks
-				result_info = {"new_best": run.score > 0, "unlocked_indices": range(1, profile.unlocked_count())}
+				profile.data.run_sparks = run.sparks
+				profile.data.longest = run.elapsed()
+				profile.data.max_echoes = run.echo_count()
+				profile.data.best_score = run.score
+				result_info = {"new_best": run.score > 0, "unlocked_indices": range(1, profile.unlocked_count()), "new_stickers": ChallengeBook.earned(profile.data)}
 				show_results()
 	await get_tree().process_frame
 	await get_tree().process_frame

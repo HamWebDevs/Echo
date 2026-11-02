@@ -29,6 +29,9 @@ Everyone gets the same daily spark sequence. Try as often as you like, improve y
 **FIND YOUR SIGNAL**
 Meet new pals and unlock playful hats by collecting sparks. The optional, permanent Supporter Pack adds four pals, two arena themes and another sound palette. Every score is earned through skill.
 
+**FILL YOUR STICKER JOURNAL**
+Twelve permanent skill goals celebrate your little wins. Chase daily bronze, silver and gold targets, or work on a personal milestone at your own pace.
+
 **PLAY YOUR WAY**
 The core game works offline. There are no forced ads, no energy timers and no required account. Adjust music, sound and vibration, or use reduced motion and higher contrast.
 

@@ -11,6 +11,7 @@ func _initialize() -> void:
 	_test_swept_collision()
 	_test_history()
 	_test_profile()
+	_test_challenges()
 	print("CORE TESTS: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)
 
@@ -155,5 +156,44 @@ func _test_profile() -> void:
 	check(recovered.record(reward).unlocked_indices.is_empty(), "the next run does not announce the same unlock again")
 	reward.sparks = 40
 	check(recovered.record(reward).unlocked_indices == [2, 3], "one run can report every newly earned pal")
+	for suffix in ["", ".bak", ".tmp"]:
+		DirAccess.remove_absolute(path + suffix)
+
+func _test_challenges() -> void:
+	var path := "user://journal-test-profile.json"
+	var store := ProfileStore.new(path)
+	check(ChallengeBook.earned(store.data).is_empty(), "fresh players start with an empty journal")
+	var sample := EchoRun.new(RunConfig.daily("2026-11-02"))
+	sample.score = 210
+	sample.sparks = 10
+	sample.tick = 20 * 60
+	var reward := store.record(sample)
+	check(reward.new_stickers.has("pocket") and reward.new_stickers.has("double") and reward.new_stickers.has("hundred"), "one run can complete several skill goals")
+	check(store.data.best == 0 and store.data.best_score == 210, "daily score contributes to goals without replacing endless best")
+	var earned := ChallengeBook.earned(store.data)
+	check(store.record(EchoRun.new()).new_stickers.is_empty() and ChallengeBook.earned(store.data) == earned, "a weaker run preserves stickers and does not award them twice")
+	var restored := ProfileStore.new(path)
+	restored.load_profile()
+	check(ChallengeBook.earned(restored.data) == earned, "stickers survive a save and reload")
+	var tutorial := EchoRun.new()
+	tutorial.config.tutorial = true
+	tutorial.sparks = 999
+	tutorial.score = 9999
+	var before: Dictionary = store.data.duplicate(true)
+	store.record(tutorial)
+	check(store.data == before, "tutorial practice cannot grant stickers or regular progress")
+	for i in range(7):
+		var extra := EchoRun.new()
+		extra.score = i
+		store.record(extra)
+	check(store.data.recent_runs.size() == 5 and store.data.recent_runs[0].score == 2 and store.data.recent_runs[-1].score == 6, "recent runs retain only the latest five in order")
+	var migrated := store._sanitize({"schema": 1, "best": 300, "longest": 33, "daily": {"old:v1": {"score": 450, "sparks": 12}}})
+	check(migrated.best_score == 450 and migrated.run_sparks == 12 and migrated.max_echoes == 4, "old saves recover supported milestone facts")
+	var malformed := store._sanitize({"schema": 1, "recent_runs": [{"score": []}, "bad"], "run_sparks": {}, "max_echoes": -7})
+	check(malformed.recent_runs.size() == 1 and malformed.recent_runs[0].score == 0 and malformed.max_echoes == 0, "malformed journal fields are safely normalized")
+	check(ChallengeBook.daily_medal(74) == "" and ChallengeBook.daily_medal(75) == "Bronze", "bronze medal begins at exactly 75")
+	check(ChallengeBook.daily_medal(199) == "Bronze" and ChallengeBook.daily_medal(200) == "Silver", "silver medal begins at exactly 200")
+	check(ChallengeBook.daily_medal(449) == "Silver" and ChallengeBook.daily_medal(450) == "Gold" and ChallengeBook.daily_target(450) == 0, "gold medal is the final daily target")
+	check(store.best_for(RunConfig.daily("2026-11-03")) == 0 and not ChallengeBook.earned(store.data).is_empty(), "a new daily route leaves permanent stickers intact")
 	for suffix in ["", ".bak", ".tmp"]:
 		DirAccess.remove_absolute(path + suffix)

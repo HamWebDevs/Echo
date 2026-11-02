@@ -7,8 +7,10 @@ var celebrate := false
 var surprised := false
 var clock := 0.0
 
-func _ready() -> void:
+func _init() -> void:
 	custom_minimum_size = Vector2(100, 140)
+
+func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _process(delta: float) -> void:

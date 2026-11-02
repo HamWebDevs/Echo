@@ -4,11 +4,15 @@ A portrait Android arcade game: collect sparks and dodge delayed echoes of your 
 
 Project ECHO is a development name, not a cleared commercial brand. The package ID is `com.hamwebdev.echo`.
 
-## Cartoon preview 0.3.0
+[**Download the Android preview**](https://github.com/HamWebDevs/Echo/releases/download/v0.4.0-preview/project-echo-preview.apk) · [Installation help](docs/TESTING-THE-PREVIEW.md)
+
+## Cartoon preview 0.4.0
+
+The new sticker journal offers 12 permanent skill goals, live goal prompts, daily Bronze/Silver/Gold targets and a five-run history. Stickers never expire. Both game modes contribute to journal goals while retaining separate score records.
 
 Meet the gang through animated portraits and character stories. Earn a new pal and equip it straight from the results screen, or follow named progress toward the next unlock. The cartoon style includes chunky outlines, rounded Nunito lettering, distinct accessories, blinking faces, wobbling stars, button squash, score bounces and collection confetti. Reduced motion disables decorative animation. Existing saves and gameplay rules remain compatible. See [preview notes](docs/PREVIEW.md).
 
-The **Android preview download** GitHub workflow builds installable artifacts and attaches them to a draft release using GitHub’s own token. It can be run from the Actions tab. CI generates a temporary development key; builds from different signing sources cannot update one another in place.
+The **Android preview download** GitHub workflow builds installable artifacts and publishes them as a public GitHub prerelease after uploading all files using GitHub’s own token. It can be run from the Actions tab. CI uses the optional `ECHO_PREVIEW_KEY` repository secret (base64-encoded development keystore, alias `androiddebugkey`, password `android`). Without that secret it generates a temporary development key; builds signed with different keys cannot update one another in place. Production signing remains separate.
 
 <img src="docs/media/home.png" alt="Cartoon home screen with Pip and the purple copycats" width="270"> <img src="docs/media/game.png" alt="The cartoon game arena" width="270">
 

@@ -25,6 +25,20 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates/4.6.3.stable"
           unzip -j /tmp/templates.tpz 'templates/android*' -d "$HOME/.local/share/godot/export_templates/4.6.3.stable"
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-36' 'build-tools;36.0.0' 'build-tools;36.1.0' 'platform-tools'
+      - name: Restore optional stable preview signing key
+        env:
+          ECHO_PREVIEW_KEY: ${{ secrets.ECHO_PREVIEW_KEY }}
+        run: |
+          python - <<'PYKEY'
+          import base64, os
+          from pathlib import Path
+          key = os.environ.get('ECHO_PREVIEW_KEY', '')
+          if key:
+              destination = Path('.tools/debug.keystore')
+              destination.parent.mkdir(exist_ok=True)
+              destination.write_bytes(base64.b64decode(key, validate=True))
+              destination.chmod(0o600)
+          PYKEY
       - name: Test and build
         run: |
           bash tools/test.sh
@@ -43,5 +57,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release view v0.3.0-preview >/dev/null 2>&1 || gh release create v0.3.0-preview --target "$GITHUB_SHA" --draft --prerelease --title 'ECHO 0.3.0 — cartoon preview' --notes-file docs/PREVIEW.md
-          gh release upload v0.3.0-preview build/android/project-echo-preview.apk build/android/project-echo-unsigned.aab dist/*.zip dist/manifest.json --clobber
+          gh release view v0.4.0-preview >/dev/null 2>&1 || gh release create v0.4.0-preview --target "$GITHUB_SHA" --draft --prerelease --title 'ECHO 0.4.0 — cartoon preview' --notes-file docs/PREVIEW.md
+          gh release upload v0.4.0-preview build/android/project-echo-preview.apk build/android/project-echo-unsigned.aab dist/*.zip dist/manifest.json --clobber
+          gh release edit v0.4.0-preview --draft=false --prerelease

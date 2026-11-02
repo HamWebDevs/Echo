@@ -1,3 +1,11 @@
+# Journal preview 0.4.0
+
+**57 core checks and 30 UI checks pass (87 total).** New coverage verifies permanent milestone progress, multiple goals in one run, no repeated sticker announcements, old-save migration, malformed new fields, tutorial exclusion, five-run history, exact medal thresholds and daily rollover without losing permanent stickers. The journal and pre-run medal prompt are included in UI checks.
+
+The earlier workspace download link failed in the user's Android chat client. The 0.3.0 preview was published as a public GitHub prerelease, and an unauthenticated ranged HTTPS request returned HTTP 206 and the APK ZIP signature. Version 0.4.0's workflow publishes all downloads after uploading them, rather than leaving an owner-only draft. Native phone performance and Play billing still require testing.
+
+A repository-secret setup attempt for stable preview signing was denied by GitHub (HTTP 403). The workflow supports an owner-provided ECHO_PREVIEW_KEY secret; otherwise CI development signatures may differ between builds. Uninstalling to change signing keys removes local progress. This is not a production signing setup.
+
 # Pal progression preview 0.3.0
 
 Prepared 2 November 2026. **44 core checks and 28 UI integration checks pass (72 total)**. New coverage verifies multiple pal unlocks in one run, no repeat announcement on the next run, saved equipment selection, refusal to equip locked/invalid characters, and rechecking purchase access after a preview opens. The rules version and save schema remain unchanged.
