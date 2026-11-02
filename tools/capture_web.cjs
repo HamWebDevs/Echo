@@ -14,7 +14,9 @@ const path = require('node:path');
   });
   const errors = [];
   try {
-  for (const screen of ['home', 'game', 'controls', 'fixed', 'pop', 'daily', 'results', 'collection', 'pal', 'journal', 'settings', 'supporter']) {
+  const requested = process.argv.find(arg => arg.startsWith('--screen='))?.split('=')[1];
+  const screens = ['home', 'game', 'controls', 'fixed', 'pop', 'daily', 'results', 'collection', 'pal', 'journal', 'settings', 'supporter'];
+  for (const screen of screens.filter(screen => !requested || screen === requested)) {
     const page = await browser.newPage({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 2 });
     await page.route('http://127.0.0.1:8765/', async route => {
       const response = await route.fetch();

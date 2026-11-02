@@ -250,7 +250,7 @@ func start_tutorial() -> void:
 	config.tutorial = true
 	start_run(config)
 	services.track("tutorial_start")
-	_toast("Touch anywhere and drag upward to collect your first spark.")
+	_toast("Drag the big joystick upward to collect your first spark." if profile.data.settings.fixed_joystick else "Touch anywhere and drag upward to collect your first spark.")
 
 func start_run(config: RunConfig) -> void:
 	_new_page("game", 8)
@@ -324,7 +324,7 @@ func start_run(config: RunConfig) -> void:
 	var tip := _panel(body, Color("f8df9b"))
 	tip.add_child(EchoStyle.label("MAKE A LITTLE SPACE.", 20, EchoStyle.TEXT, true))
 	tip.add_child(_paragraph("3 stars charge POP! Get close, tap it, and poof — nearby copycats are gone for 8 seconds.", 14, EchoStyle.TEXT))
-	help_label = EchoStyle.label("DRAG ANYWHERE  ·  LIFT YOUR THUMB TO KEEP MOVING", 10, EchoStyle.MUTED)
+	help_label = EchoStyle.label(("DRAG THE JOYSTICK" if profile.data.settings.fixed_joystick else "DRAG ANYWHERE") + "  ·  LIFT TO KEEP MOVING", 10, EchoStyle.MUTED)
 	help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(help_label)
 	_game_input_passthrough(page)

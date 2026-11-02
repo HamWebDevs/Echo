@@ -103,6 +103,9 @@ func _draw() -> void:
 		var at := run.position_at(now)
 		draw_arc(at, 33 + sin(clock * 4) * 2, 0, TAU, 48, Color(EchoStyle.GOLD, 0.65), 3, true)
 	for effect in pop_effects:
+		if reduced_motion:
+			draw_string(EchoStyle.display, effect.at + Vector2(-34, -36), "POP!", HORIZONTAL_ALIGNMENT_LEFT, -1, 30, CartoonArt.INK)
+			continue
 		var t: float = 1 - effect.life / 0.7
 		var radius := EchoRun.POP_RADIUS * (1.0 if reduced_motion else minf(1, t * 2))
 		draw_circle(effect.at, radius, Color("f6c85f", (1 - t) * 0.13))
