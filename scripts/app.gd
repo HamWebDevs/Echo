@@ -34,8 +34,14 @@ var metadata: Dictionary = {"developer": "HamWebDev", "support_email": "", "priv
 var showcase_mode := ""
 var showcase_started := false
 var goal_label: Label
+var game_controls: Control
+var pop_button: Button
+var music_button: Button
+var pause_button: Button
+var hud_touches: Dictionary = {}
 
 func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if FileAccess.file_exists("res://config/app_metadata.json"):
 		var public_config: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://config/app_metadata.json"))
 		if public_config is Dictionary:
@@ -78,7 +84,13 @@ func _draw() -> void:
 	draw_circle(Vector2(0, size.y * 0.8), 200, Color(EchoStyle.PURPLE, 0.013))
 
 func _new_page(next_state: String, spacing: int = 10) -> VBoxContainer:
+	hud_touches.clear()
 	_close_modal()
+	if is_instance_valid(pad):
+		pad.release()
+	if is_instance_valid(game_controls):
+		game_controls.hide()
+		game_controls.queue_free()
 	if is_instance_valid(page):
 		# Keep the old controls in-tree until the current touch/mouse dispatch ends.
 		page.hide()
@@ -115,8 +127,9 @@ func _layout() -> void:
 			page.add_theme_constant_override("margin_top", maxi(24, int(safe.position.y * viewport_size.y / screen.y) + 8))
 			page.add_theme_constant_override("margin_bottom", maxi(20, int((screen.y - safe.end.y) * viewport_size.y / screen.y) + 8))
 	if state == "game" and is_instance_valid(arena):
-		var side := minf(width - 56, viewport_size.y - 430)
+		var side := minf(width - 24, viewport_size.y - 310)
 		arena.custom_minimum_size = Vector2(side, side)
+		_position_game_controls.call_deferred()
 	queue_redraw()
 
 func _header(title: String, back: Callable = Callable()) -> void:
@@ -203,8 +216,8 @@ func show_home() -> void:
 		navigation.add_child(button)
 	body.add_child(navigation)
 	body.add_child(EchoStyle.spacer(2, true))
-	var footer := EchoStyle.label("ONE THUMB. ONE MORE TRY.", 10, EchoStyle.MUTED)
-	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var footer := EchoStyle.button("INVITE A FRIEND  ↗", services.share_invite, false, 42)
+	footer.add_theme_font_size_override("font_size", 12)
 	body.add_child(footer)
 
 func _friendly_date() -> String:
@@ -237,10 +250,12 @@ func start_tutorial() -> void:
 	config.tutorial = true
 	start_run(config)
 	services.track("tutorial_start")
-	_toast("Drag upward in the control pad to collect your first spark.")
+	_toast("Touch anywhere and drag upward to collect your first spark.")
 
 func start_run(config: RunConfig) -> void:
 	_new_page("game", 8)
+	page.add_theme_constant_override("margin_left", 12)
+	page.add_theme_constant_override("margin_right", 12)
 	run = EchoRun.new(config)
 	game_started = false
 	paused = false
@@ -251,7 +266,12 @@ func start_run(config: RunConfig) -> void:
 	var mode_label := EchoStyle.label("GUIDED RUN" if config.tutorial else ("DAILY CHASE  /  " + config.daily_date if config.mode == "daily" else "ENDLESS  /  FIND YOUR FLOW"), 12, EchoStyle.MINT)
 	mode_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(mode_label)
-	top.add_child(EchoStyle.button("II", pause_game, false, 44))
+	music_button = EchoStyle.button("MUSIC ON" if profile.data.settings.music else "MUSIC OFF", _toggle_music, false, 44)
+	music_button.add_theme_font_size_override("font_size", 10)
+	top.add_child(music_button)
+	pause_button = EchoStyle.button("II", pause_game, false, 48)
+	pause_button.custom_minimum_size.x = 52
+	top.add_child(pause_button)
 	body.add_child(top)
 	var score_row := EchoStyle.hbox()
 	score_label = EchoStyle.label("0000", 55, EchoStyle.TEXT, true)
@@ -262,7 +282,7 @@ func start_run(config: RunConfig) -> void:
 	best_column.add_child(EchoStyle.label(str(profile.best_for(config)), 24, EchoStyle.MUTED, true))
 	score_row.add_child(best_column)
 	body.add_child(score_row)
-	signal_label = EchoStyle.label("DRAG BELOW TO BEGIN", 12, EchoStyle.MUTED)
+	signal_label = EchoStyle.label("TOUCH ANYWHERE · DRAG TO BEGIN", 12, EchoStyle.MUTED)
 	body.add_child(signal_label)
 	var center := CenterContainer.new()
 	arena = ArenaView.new()
@@ -301,13 +321,86 @@ func start_run(config: RunConfig) -> void:
 	goal_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(goal_label)
 	body.add_child(EchoStyle.spacer(1, true))
-	pad = ThumbPad.new()
-	pad.custom_minimum_size.y = 120
-	body.add_child(pad)
-	help_label = EchoStyle.label("DRAG TO STEER  ·  RELEASE TO KEEP MOVING", 10, EchoStyle.MUTED)
+	var tip := _panel(body, Color("f8df9b"))
+	tip.add_child(EchoStyle.label("MAKE A LITTLE SPACE.", 20, EchoStyle.TEXT, true))
+	tip.add_child(_paragraph("3 stars charge POP! Get close, tap it, and poof — nearby copycats are gone for 8 seconds.", 14, EchoStyle.TEXT))
+	help_label = EchoStyle.label("DRAG ANYWHERE  ·  LIFT YOUR THUMB TO KEEP MOVING", 10, EchoStyle.MUTED)
 	help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(help_label)
+	_game_input_passthrough(page)
+	game_controls = Control.new()
+	game_controls.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(game_controls)
+	game_controls.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pad = ThumbPad.new()
+	pad.fixed = profile.data.settings.fixed_joystick
+	game_controls.add_child(pad)
+	pad.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	pop_button = EchoStyle.button("POP!  0/3", _pop, true, 66)
+	pop_button.custom_minimum_size.x = 130
+	game_controls.add_child(pop_button)
 	_layout()
+	_update_hud()
+
+func _input(event: InputEvent) -> void:
+	# Godot's mouse emulation only covers one touch. Capture HUD gestures explicitly
+	# so another finger can POP, pause or mute while the steering finger stays down.
+	if event is InputEventScreenDrag and hud_touches.has(event.index):
+		get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch:
+		if not event.pressed and hud_touches.has(event.index):
+			var button: Button = hud_touches[event.index]
+			hud_touches.erase(event.index)
+			get_viewport().set_input_as_handled()
+			if is_instance_valid(button):
+				button.button_up.emit()
+				if not event.canceled and state == "game" and not paused and resume_time <= 0 and button.get_global_rect().has_point(event.position):
+					button.pressed.emit()
+		elif event.pressed and state == "game" and not paused and resume_time <= 0:
+			for button in [pop_button, pause_button, music_button]:
+				if is_instance_valid(button) and button.is_visible_in_tree() and button.get_global_rect().has_point(event.position):
+					hud_touches[event.index] = button
+					get_viewport().set_input_as_handled()
+					button.button_down.emit()
+					return
+
+func _game_input_passthrough(node: Node) -> void:
+	if node is BaseButton:
+		return
+	if node is Control:
+		node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		_game_input_passthrough(child)
+
+func _position_game_controls() -> void:
+	if state != "game" or not is_instance_valid(pad) or not is_instance_valid(arena):
+		return
+	var rect := arena.get_global_rect()
+	var left_handed: bool = profile.data.settings.left_handed
+	pad.fixed_center = Vector2(rect.end.x - 95 if left_handed else rect.position.x + 95, rect.end.y - 96)
+	pop_button.position = Vector2(rect.position.x + 18 if left_handed else rect.end.x - 148, rect.end.y - 87)
+	pop_button.size = Vector2(130, 66)
+	pad.queue_redraw()
+
+func _toggle_music() -> void:
+	profile.data.settings.music = not profile.data.settings.music
+	profile.save()
+	audio.apply(profile.data.settings)
+	audio.begin_music()
+	music_button.text = "MUSIC ON" if profile.data.settings.music else "MUSIC OFF"
+
+func _pop() -> void:
+	if state != "game" or paused or resume_time > 0 or not run.alive:
+		return
+	if run.pop_charge < EchoRun.POP_COST:
+		_toast("Collect %d more stars to charge POP!" % (EchoRun.POP_COST - run.pop_charge))
+		return
+	var cleared := run.pop_echoes()
+	if cleared.is_empty():
+		_toast("Get closer to a copycat. Your POP is still ready!")
+		return
+	arena.pop_burst(run.player, cleared)
+	audio.play("pop", run.echo_count())
 	_update_hud()
 
 func _physics_process(_delta: float) -> void:
@@ -329,7 +422,7 @@ func _physics_process(_delta: float) -> void:
 	run.step(steering)
 	for event in run.events:
 		if event.type == "spark":
-			arena.burst(event.position)
+			arena.burst(event.position, event.points)
 			if not profile.data.settings.reduced_motion:
 				score_label.scale = Vector2(1.10, 0.92)
 				score_label.create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT).tween_property(score_label, "scale", Vector2.ONE, 0.24)
@@ -382,17 +475,29 @@ func _update_hud() -> void:
 	if not is_instance_valid(score_label):
 		return
 	score_label.text = "%04d" % run.score
+	pop_button.text = "POP!" if run.pop_charge == EchoRun.POP_COST else "POP!  %d/3" % run.pop_charge
+	# Keep the hit area active while charging, so it never starts a joystick gesture.
+	pop_button.modulate = Color.WHITE if run.pop_charge == EchoRun.POP_COST else Color(1, 1, 1, 0.7)
 	var count := run.echo_count()
 	var time_to_next := 8.0 - fmod(run.elapsed(), 8.0)
-	signal_label.text = "%02d / 06 ECHOES   ·   ×%d SCORE" % [count, count + 1]
+	signal_label.text = "%02d / 06 COPYCATS   ·   ×%d SCORE" % [count, count + 1]
 	if count < 6:
 		signal_label.text += "   ·   NEXT IN %.1fs" % time_to_next
+	if not game_started:
+		signal_label.text = "DRAG THE BIG JOYSTICK TO BEGIN" if pad.fixed else "TOUCH ANYWHERE · DRAG TO BEGIN"
 	energy_bar.value = maxf(0, run.charge / run.charge_limit())
 	energy_label.text = "SPARK  /  %.1fs" % maxf(0, run.charge)
 	energy_label.add_theme_color_override("font_color", EchoStyle.RED if run.charge < 2 else EchoStyle.GOLD)
 
 func _process(delta: float) -> void:
 	screen_clock += delta
+	# Wrapped text can briefly inflate a new container before its width settles.
+	if is_instance_valid(page) and page.size.y > get_viewport_rect().size.y and page.get_combined_minimum_size().y <= get_viewport_rect().size.y:
+		_layout()
+	if is_instance_valid(pad):
+		pad.active = state == "game" and not paused and resume_time <= 0 and run.alive
+		if not pad.active and pad.held:
+			pad.release()
 	if toast_left > 0:
 		toast_left -= delta
 		if toast_left <= 0 and is_instance_valid(toast):
@@ -422,6 +527,8 @@ func _process(delta: float) -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and (event.keycode == KEY_ESCAPE or event.keycode == KEY_P):
 		_back()
+	elif event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_SPACE and state == "game":
+		_pop()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
@@ -488,7 +595,7 @@ func _complete_tutorial() -> void:
 	profile.save()
 	services.track("tutorial_complete")
 	var content := _modal("03 / YOU KNOW THE LOOP", "Make your next move")
-	content.add_child(_paragraph("More echoes mean more points. Leave yourself space, chase the sparks, and see how far you can go."))
+	content.add_child(_paragraph("Collect 3 stars to charge POP! Tap it near a copycat to clear it for 8 seconds. Keep chasing stars and leave yourself space."))
 	content.add_child(EchoStyle.button("LET'S PLAY", func() -> void: _begin_mode(tutorial_destination), true))
 
 func _end_run() -> void:
@@ -854,7 +961,7 @@ func show_settings() -> void:
 	var content := EchoStyle.vbox(10)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(content)
-	for item in [["sound", "Sound effects", "Hear collections, echoes, and collisions."], ["music", "Music", "A quiet electronic soundtrack."], ["haptics", "Vibration", "Subtle feedback on supported phones."], ["reduced_motion", "Reduced motion", "Remove decorative animation and particles."], ["high_contrast", "High contrast", "Stronger borders and brighter echo shapes."], ["analytics", "Usage analytics", "Optional app activity data to improve the game."]]:
+	for item in [["fixed_joystick", "Fixed joystick", "OFF: touch anywhere to steer. ON: a large joystick stays over the arena."], ["left_handed", "Swap control sides", "Move POP to the left and the fixed joystick to the right."], ["sound", "Sound effects", "Hear collections, echoes, and collisions."], ["music", "Music", "A bouncy original tune with bass, bells and percussion."], ["haptics", "Vibration", "Subtle feedback on supported phones."], ["reduced_motion", "Reduced motion", "Remove decorative animation and particles."], ["high_contrast", "High contrast", "Stronger borders and brighter echo shapes."], ["analytics", "Usage analytics", "Optional app activity data to improve the game."]]:
 		_setting_row(content, item[0], item[1], item[2])
 	content.add_child(EchoStyle.button("Replay the interactive tutorial", func() -> void:
 		tutorial_destination = "endless"
@@ -863,7 +970,7 @@ func show_settings() -> void:
 	if not str(metadata.get("support_email", "")).is_empty():
 		content.add_child(EchoStyle.button("Contact " + str(metadata.developer), func() -> void: OS.shell_open("mailto:" + str(metadata.support_email))))
 	content.add_child(EchoStyle.button("Restore purchases", services.restore))
-	content.add_child(EchoStyle.label("PROJECT ECHO  /  0.4.0  /  RULES v1", 10, EchoStyle.MUTED))
+	content.add_child(EchoStyle.label("PROJECT ECHO  /  0.5.0  /  RULES v2", 10, EchoStyle.MUTED))
 
 func _setting_row(parent: Node, key: String, title: String, description: String) -> void:
 	var panel := _panel(parent)
@@ -891,7 +998,7 @@ func show_how_to() -> void:
 	_new_page("how_to", 16)
 	_header("HOW TO PLAY", show_home)
 	body.add_child(EchoStyle.label("Simple moves.\nLasting echoes.", 43, EchoStyle.TEXT, true))
-	for item in [["01", "Follow the gold", "Drag in the lower control pad to steer. Releasing your thumb keeps you moving. Collect sparks before the timer empties."], ["02", "Remember your route", "Every eight seconds, a purple echo repeats your earlier movement. Its body is dangerous. Its fading trail is safe."], ["03", "Leave yourself an escape", "Avoid walls and echoes. Each extra echo increases the points per spark. The same daily route is available to everyone, with unlimited tries."]]:
+	for item in [["01", "Follow the gold", "Touch anywhere and drag to steer. Choose a large fixed joystick in Settings. Releasing your thumb keeps you moving. Collect sparks before the timer empties."], ["02", "Remember your route", "Every eight seconds, a purple echo repeats your earlier movement. Its body is dangerous. Its fading trail is safe."], ["03", "Leave yourself an escape", "Collect 3 stars to charge POP! Tap it near copycats to clear them for 8 seconds. They return with a brief warning. Walls are always dangerous."]]:
 		var panel := _panel(body)
 		panel.add_child(EchoStyle.label(item[0] + "  /  " + item[1], 21, EchoStyle.MINT, true))
 		panel.add_child(_paragraph(item[2], 15))
@@ -899,7 +1006,7 @@ func show_how_to() -> void:
 	body.add_child(EchoStyle.button("TRY THE GUIDED RUN", func() -> void:
 		tutorial_destination = "endless"
 		start_tutorial(), true, 62))
-	body.add_child(_paragraph("On a computer, use WASD or the arrow keys. Press Esc to pause.", 13))
+	body.add_child(_paragraph("On a computer, use WASD or the arrow keys. Press Space to POP, Esc to pause.", 13))
 
 func show_privacy() -> void:
 	_new_page("privacy", 14)
@@ -914,7 +1021,7 @@ func show_privacy() -> void:
 	content.add_child(EchoStyle.label("Made by " + str(metadata.developer), 16, EchoStyle.MINT, true))
 	for paragraph in ["The core game works offline. Scores, settings, and earned cosmetics are stored on your device. There is no player account, chat, advertising, or public leaderboard.", "Optional analytics is off by default. When enabled in a connected release, Firebase receives events such as tutorial completion, runs, retries, and sharing. We do not send your movement history or request your name, contacts, microphone, or location.", "In releases with purchases enabled, Google Play and RevenueCat process purchases and anonymous entitlement records so that you can restore the Supporter Pack. Payment details are handled by the store.", "Turning analytics off stops future usage events. Uninstalling removes local progress; purchased cosmetics can be restored using the same Google Play account. Android may report technical diagnostics through its own platform settings.", "Project ECHO uses Godot Engine (MIT), Inter, Nunito and Space Grotesk (SIL Open Font License). The geometric artwork and synthesized audio were created for this project. Full notices are bundled with the source."]:
 		content.add_child(_paragraph(paragraph, 16))
-	content.add_child(EchoStyle.label("DEVELOPMENT BUILD · 0.4.0", 11, EchoStyle.MINT))
+	content.add_child(EchoStyle.label("DEVELOPMENT BUILD · 0.5.0", 11, EchoStyle.MINT))
 	content.add_child(EchoStyle.button("Open-source licences", show_licences))
 	if str(metadata.get("privacy_url", "")).begins_with("https://"):
 		content.add_child(EchoStyle.button("Privacy policy online", func() -> void: OS.shell_open(str(metadata.privacy_url))))
@@ -988,13 +1095,17 @@ func _prepare_capture() -> void:
 		"settings": show_settings()
 		"how_to": show_how_to()
 		"supporter": show_supporter()
-		"game", "daily", "results", "unlock":
+		"controls", "fixed":
+			profile.data.settings.fixed_joystick = capture_args.screen == "fixed"
+			start_run(RunConfig.endless(423))
+		"game", "daily", "results", "unlock", "pop":
 			start_run(RunConfig.daily(RunConfig.utc_date()) if capture_args.screen == "daily" else RunConfig.endless(423))
 			# Drive real simulation toward targets for a reproducible visual fixture.
 			for i in range(1200):
 				if not run.alive: break
 				run.step(DemoPilot.direction(run))
 			paused = true
+			game_started = true
 			_update_hud()
 			if capture_args.screen in ["results", "unlock"]:
 				while run.alive and run.tick < 7200:
@@ -1011,7 +1122,13 @@ func _prepare_capture() -> void:
 				show_results()
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().create_timer(0.5).timeout
+	if capture_args.get("screen") == "pop":
+		paused = false
+		_pop()
+		paused = true
+	await get_tree().create_timer(0.12 if capture_args.get("screen") == "pop" else 0.5).timeout
+	if capture_args.get("screen") == "pop":
+		arena.set_process(false) # Hold the captured animation frame, debug fixture only.
 	if OS.has_feature("web"):
 		print("CAPTURE_OK ", state)
 		return

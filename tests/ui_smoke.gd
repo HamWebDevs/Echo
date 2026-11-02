@@ -66,6 +66,55 @@ func _run() -> void:
 	check(not app._equip_skin(10), "an open preview cannot equip a pal after ownership is revoked")
 	app.services.price = ""
 	app.profile.data.tutorial_complete = true
+	app.start_run(RunConfig.endless(42))
+	await process_frame
+	await process_frame
+	check(app.help_label.get_global_rect().end.y <= root.get_visible_rect().size.y, "game controls and instructions fit the portrait viewport")
+	var touch_at: Vector2 = app.arena.get_global_rect().get_center()
+	_touch(touch_at, true, 0)
+	check(app.pad.held and app.pad.origin.distance_to(touch_at) < 1, "floating joystick begins where the screen is touched")
+	_touch(touch_at + Vector2(50, 20), true, 1)
+	check(app.pad.touch_id == 0, "a second finger cannot steal the joystick")
+	_drag(touch_at + Vector2(0, -50), 0)
+	check(app.pad.direction.y < -0.9, "real screen drag steers the floating joystick")
+	_touch(touch_at, false, 1)
+	check(app.pad.held, "lifting another finger does not release steering")
+	app._physics_process(1.0 / 60)
+	var pop_taps := [0]
+	app.pop_button.pressed.connect(func() -> void: pop_taps[0] += 1)
+	_touch(app.pop_button.get_global_rect().get_center(), true, 1)
+	_touch(app.pop_button.get_global_rect().get_center(), false, 1)
+	check(pop_taps[0] == 1 and app.pad.held, "a second finger can tap POP while the first keeps steering")
+	_touch(app.pop_button.get_global_rect().get_center(), true, 1)
+	_drag(touch_at, 1)
+	_touch(touch_at, false, 1)
+	check(pop_taps[0] == 1 and app.pad.held, "dragging off POP cancels the tap without interrupting steering")
+	_touch(app.pop_button.get_global_rect().get_center(), false, 0)
+	check(not app.pad.held and app.run.heading == Vector2.UP, "release over a button ends gesture and preserves heading")
+	_touch(app.pop_button.get_global_rect().get_center(), true, 0)
+	_touch(app.pop_button.get_global_rect().get_center(), false, 0)
+	check(not app.pad.held and not app.paused, "POP button does not start an accidental joystick gesture")
+	var pause_button: Button
+	for control in app.page.find_children("*", "Button", true, false):
+		if control.text == "II": pause_button = control
+	_touch(pause_button.get_global_rect().get_center(), true, 0)
+	_touch(pause_button.get_global_rect().get_center(), false, 0)
+	check(app.paused and not app.pad.held, "pause button receives real touch above the joystick layer")
+	app._toggle_music()
+	check(not app.audio.music.playing and not app.profile.data.settings.music, "music toggle stops playback and saves the setting")
+	app._toggle_music()
+	check(app.audio.music.playing and app.profile.data.settings.music, "music can be restarted from the game")
+	app.profile.data.settings.fixed_joystick = true
+	app.start_run(RunConfig.endless(42))
+	await process_frame
+	await process_frame
+	_touch(Vector2(270, 200), true, 0)
+	check(not app.pad.held, "fixed mode ignores touches outside its large control")
+	_touch(Vector2(270, 200), false, 0)
+	_touch(app.pad.fixed_center + Vector2(30, 0), true, 0)
+	check(app.pad.held and app.pad.direction.x > 0.9, "large fixed joystick steers relative to its visible center")
+	_touch(app.pad.fixed_center, false, 0)
+	app.profile.data.settings.fixed_joystick = false
 	app.start_run(RunConfig.daily("2026-10-30"))
 	await process_frame
 	check(not app.game_started and app.run.tick == 0, "run waits for deliberate steering")
@@ -108,3 +157,18 @@ func _run() -> void:
 		DirAccess.remove_absolute("user://ui-smoke-profile.json" + suffix)
 	print("UI SMOKE: %d checks, failed=%s" % [checks, failed])
 	quit(1 if failed else 0)
+
+func _touch(at: Vector2, down: bool, finger: int) -> void:
+	var event := InputEventScreenTouch.new()
+	event.position = root.get_final_transform() * at
+	event.pressed = down
+	event.index = finger
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+
+func _drag(at: Vector2, finger: int) -> void:
+	var event := InputEventScreenDrag.new()
+	event.position = root.get_final_transform() * at
+	event.index = finger
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()

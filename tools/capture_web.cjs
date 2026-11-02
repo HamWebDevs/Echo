@@ -14,7 +14,7 @@ const path = require('node:path');
   });
   const errors = [];
   try {
-  for (const screen of ['home', 'game', 'daily', 'results', 'collection', 'pal', 'journal', 'settings', 'supporter']) {
+  for (const screen of ['home', 'game', 'controls', 'fixed', 'pop', 'daily', 'results', 'collection', 'pal', 'journal', 'settings', 'supporter']) {
     const page = await browser.newPage({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 2 });
     await page.route('http://127.0.0.1:8765/', async route => {
       const response = await route.fetch();
@@ -31,6 +31,14 @@ const path = require('node:path');
     const ready = page.waitForEvent('console', { predicate: message => message.text().includes('CAPTURE_OK'), timeout: 45000 });
     await page.goto('http://127.0.0.1:8765/');
     await ready;
+    if (['controls', 'fixed'].includes(screen)) {
+      const client = await page.context().newCDPSession(page);
+      const x = screen === 'fixed' ? 107 : 140;
+      const y = screen === 'fixed' ? 611 : 820;
+      await client.send('Input.dispatchTouchEvent', {type:'touchStart', touchPoints:[{x, y, id:0}]});
+      await client.send('Input.dispatchTouchEvent', {type:'touchMove', touchPoints:[{x, y:y-50, id:0}]});
+      await page.waitForTimeout(100);
+    }
     await page.screenshot({ path: path.join(output, screen + '.png') });
     console.log('Captured', screen);
     await page.close();

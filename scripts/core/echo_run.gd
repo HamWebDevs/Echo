@@ -5,12 +5,15 @@ const HZ := 60
 const DT := 1.0 / HZ
 const WORLD := 720.0
 const SPEED := 204.0
-const PLAYER_RADIUS := 12.0
-const ECHO_RADIUS := 13.0
-const SPARK_RADIUS := 13.0
+const PLAYER_RADIUS := 20.0
+const ECHO_RADIUS := 21.0
+const SPARK_RADIUS := 18.0
 const ECHO_INTERVAL := 8 * HZ
 const MAX_ECHOES := 6
 const GRACE_TICKS := 45
+const POP_COST := 3
+const POP_RADIUS := 220.0
+const POP_RESPAWN := 8 * HZ
 const HISTORY_SIZE := (MAX_ECHOES * 8 + 4) * HZ + 1
 
 var config: RunConfig
@@ -19,6 +22,9 @@ var player := Vector2(360, 540)
 var heading := Vector2.UP
 var spark := Vector2(360, 360)
 var charge := 8.0
+var pop_charge := 0
+var pops := 0
+var pop_history: Array[Dictionary] = []
 var score := 0
 var sparks := 0
 var alive := true
@@ -68,8 +74,36 @@ func _record_visual_state() -> void:
 	spark_history[tick % HISTORY_SIZE] = spark
 	charge_history[tick % HISTORY_SIZE] = charge
 
+func echo_is_present(index: int, at_tick: int = -1) -> bool:
+	var now := tick if at_tick < 0 else at_tick
+	if now < index * ECHO_INTERVAL:
+		return false
+	for pop in pop_history:
+		if pop.index == index and now >= pop.start and now < pop.end:
+			return false
+	return true
+
 func echo_is_live(index: int, at_tick: int = -1) -> bool:
-	return (tick if at_tick < 0 else at_tick) >= index * ECHO_INTERVAL + GRACE_TICKS
+	var now := tick if at_tick < 0 else at_tick
+	if not echo_is_present(index, now) or now < index * ECHO_INTERVAL + GRACE_TICKS:
+		return false
+	for pop in pop_history:
+		if pop.index == index and now >= pop.end and now < pop.end + GRACE_TICKS:
+			return false
+	return true
+
+func pop_echoes() -> Array[Vector2]:
+	var cleared: Array[Vector2] = []
+	if not alive or pop_charge < POP_COST:
+		return cleared
+	for index in range(1, echo_count() + 1):
+		if echo_is_present(index) and player.distance_to(echo_position(index)) <= POP_RADIUS:
+			cleared.append(echo_position(index))
+			pop_history.append({"index": index, "start": tick, "end": tick + POP_RESPAWN})
+	if not cleared.is_empty():
+		pop_charge = 0
+		pops += cleared.size()
+	return cleared
 
 func step(steering: Vector2 = Vector2.ZERO) -> void:
 	events.clear()
@@ -82,6 +116,8 @@ func step(steering: Vector2 = Vector2.ZERO) -> void:
 	tick += 1
 	history[tick % HISTORY_SIZE] = player
 	charge -= DT
+	# Keep all intervals needed by the replay ring; bound memory for long runs.
+	pop_history = pop_history.filter(func(pop: Dictionary) -> bool: return pop.end + GRACE_TICKS >= tick - HISTORY_SIZE)
 	if tick % ECHO_INTERVAL == 0 and tick / ECHO_INTERVAL <= MAX_ECHOES:
 		events.append({"type": "echo", "count": echo_count()})
 		charge = minf(charge, charge_limit())
@@ -99,6 +135,7 @@ func step(steering: Vector2 = Vector2.ZERO) -> void:
 			return
 	if swept_overlap(previous - spark, player - spark, PLAYER_RADIUS + SPARK_RADIUS):
 		sparks += 1
+		pop_charge = mini(POP_COST, pop_charge + 1)
 		var points := 10 * (1 + echo_count())
 		score += points
 		collected_positions.append(spark)
@@ -136,4 +173,4 @@ static func swept_overlap(relative_start: Vector2, relative_end: Vector2, radius
 func result() -> Dictionary:
 	return {"mode": config.mode, "seed": config.seed_value, "rules_version": RunConfig.RULES_VERSION,
 		"daily_date": config.daily_date, "score": score, "sparks": sparks, "duration": elapsed(),
-		"death_cause": death_cause, "echoes": echo_count()}
+		"death_cause": death_cause, "echoes": echo_count(), "pops": pops}

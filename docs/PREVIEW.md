@@ -1,17 +1,20 @@
-# ECHO 0.4.0 — cartoon preview
+# ECHO 0.5.0 — touch, pop and play
 
-Pip has a copycat problem. Collect little stars, dodge the mischievous copies of your earlier route, and see how long you last.
+Pip has a copycat problem. Collect stars, dodge copies of your earlier route, and pop your way out of a tight spot.
 
-This preview adds a **12-sticker journal**, permanent skill goals, a live next-goal prompt, daily Bronze/Silver/Gold score targets, and a five-run history. Stickers reward completed runs and do not expire. Tutorial practice does not count. Daily and Endless scores remain separate. Existing character progression and the save schema remain compatible.
+- **Touch anywhere to steer.** The floating joystick appears under your thumb, across the game screen. The separate control box is gone. Settings offers a large fixed joystick over the arena and a switch to swap control sides.
+- **Bigger cartoon characters and a garden arena.** Chunky borders, grass, flowers, score floaters and animated POP clouds give the playfield more life. Reduced motion and high contrast remain available.
+- **POP!** Three stars charge one use. Tap POP near copycats to clear every copycat within range for eight seconds. They return with a 0.75-second collision-free warning. An empty shot preserves your charge. Walls and the star timer still matter.
+- **Music you can hear.** An original bouncy toy-band loop, a new POP sound, an in-game music toggle and background audio suspension.
+- **Invite a friend.** The home screen opens Android sharing with a public download link. Result cards include a download link in the Android share caption.
 
-Daily targets are Bronze at 75 points, Silver at 200, and Gold at 450. New days offer a new shared route; your permanent journal progress stays saved. No daily streak is required.
+The 12-sticker journal, earned pals, daily medals and recent-run history remain. Existing progress and settings load; new settings default to floating controls. Gameplay rules are now **v2** because character hitboxes and POP affect difficulty. Daily seeds and records are versioned separately; older saved records are retained.
 
-Verification: **57 core checks and 30 UI checks pass (87 total)**, including save migration, repeat rewards, multiple completed goals, daily thresholds, tutorial exclusion and bounded run history. Human retention has not been measured.
+Verification: **68 core checks and 44 UI checks pass (112 total)**, including real screen-touch dispatch, two fingers, release over a button, fixed controls, music toggles, POP cost/range/respawn, replay boundaries and save migration. Browser screenshots show the actual game. Showcase clips use scripted steering, not human playtests.
 
-Install `project-echo-preview.apk` on Android 9+. This is a development-signed build, not a Play release. CI builds generate a temporary development key, so installing a CI build over a differently signed local preview requires uninstalling the old preview first; uninstalling removes local progress. A stable preview-signing secret has not been configured, so even successive CI previews may use different keys. Do not uninstall an existing preview without understanding that its local progress will be lost.
+Install `project-echo-preview.apk` on Android 9+. Public download, no GitHub login required:
+https://github.com/HamWebDevs/Echo/releases/download/v0.5.0-preview/project-echo-preview.apk
 
-The AAB is unsigned. Purchases require owner configuration. Physical-phone testing, native sharing and Play billing tests, support email, privacy hosting, branding and production signing are still launch gates. See RELEASE.md and VALIDATION.md. This preview does not establish player retention.
+This is a development-signed preview. A stable preview-signing secret has not been configured; successive CI previews may have different keys. Android cannot install an update signed with a different key. Uninstalling the old preview erases local progress, so do not uninstall without understanding that loss.
 
-The public APK link works without GitHub login: https://github.com/HamWebDevs/Echo/releases/download/v0.4.0-preview/project-echo-preview.apk
-
-Source, store-kit and checksum downloads accompany the build. Store clips use scripted steering through the real gameplay rules.
+The AAB is unsigned. Physical-phone controls, audio levels, performance, native sharing and Play billing still need device testing. Purchases require owner configuration. Support email, privacy hosting, branding and production signing remain launch gates. Human retention has not been measured. Source, store-kit and checksum downloads accompany the APK.

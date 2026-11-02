@@ -79,3 +79,16 @@ func share_image(image: Image) -> void:
 	else:
 		DisplayServer.clipboard_set(absolute)
 		message.emit("Score card saved. Its file path is on your clipboard.")
+
+const INVITE_URL := "https://github.com/HamWebDevs/Echo/releases"
+const INVITE_TEXT := "I made a mess of little copycats. Can you outrun yours? Play ECHO for Android: " + INVITE_URL
+
+func share_invite() -> void:
+	if native != null:
+		native.share_invite()
+	elif OS.has_feature("web"):
+		# Called directly by a button gesture, so browser sharing retains activation.
+		JavaScriptBridge.eval("navigator.share ? navigator.share({title:'ECHO',text:'Dodge your past. Pop your copycats.',url:'https://github.com/HamWebDevs/Echo/releases'}).catch(()=>{}) : navigator.clipboard.writeText('https://github.com/HamWebDevs/Echo/releases').catch(()=>window.open('https://github.com/HamWebDevs/Echo/releases','_blank'))")
+	else:
+		DisplayServer.clipboard_set(INVITE_TEXT)
+		message.emit("Invite link copied. Send it to a friend!")

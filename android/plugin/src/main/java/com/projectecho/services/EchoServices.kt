@@ -173,6 +173,22 @@ class EchoServices(godot: Godot) : GodotPlugin(godot) {
     }
 
     @UsedByGodot
+    fun share_invite() {
+        val host = activity ?: return
+        host.runOnUiThread {
+            try {
+                val invite = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "I made a mess of little copycats. Can you outrun yours? Play ECHO for Android: https://github.com/HamWebDevs/Echo/releases")
+                }
+                host.startActivity(Intent.createChooser(invite, "Invite a friend to ECHO"))
+            } catch (_: Exception) {
+                status("error", "Could not open sharing. Please try again.")
+            }
+        }
+    }
+
+    @UsedByGodot
     fun share_score(path: String) {
         val host = activity ?: return
         host.runOnUiThread {
@@ -184,7 +200,7 @@ class EchoServices(godot: Godot) : GodotPlugin(godot) {
                 val share = Intent(Intent.ACTION_SEND).apply {
                     type = "image/png"
                     putExtra(Intent.EXTRA_STREAM, uri)
-                    putExtra(Intent.EXTRA_TEXT, "Can you outrun yourself? Project ECHO")
+                    putExtra(Intent.EXTRA_TEXT, "Can you outrun yourself? Play ECHO: https://github.com/HamWebDevs/Echo/releases")
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 host.startActivity(Intent.createChooser(share, "Share your ECHO score"))

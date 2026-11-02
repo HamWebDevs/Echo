@@ -4,19 +4,21 @@ A portrait Android arcade game: collect sparks and dodge delayed echoes of your 
 
 Project ECHO is a development name, not a cleared commercial brand. The package ID is `com.hamwebdev.echo`.
 
-[**Download the Android preview**](https://github.com/HamWebDevs/Echo/releases/download/v0.4.0-preview/project-echo-preview.apk) · [Installation help](docs/TESTING-THE-PREVIEW.md)
+[**Download the Android preview**](https://github.com/HamWebDevs/Echo/releases/download/v0.5.0-preview/project-echo-preview.apk) · [Installation help](docs/TESTING-THE-PREVIEW.md)
 
-## Cartoon preview 0.4.0
+## Cartoon preview 0.5.0
 
-The new sticker journal offers 12 permanent skill goals, live goal prompts, daily Bronze/Silver/Gold targets and a five-run history. Stickers never expire. Both game modes contribute to journal goals while retaining separate score records.
+Touch anywhere to bring up a floating joystick, or choose a large fixed overlay in Settings. Swap control sides if you prefer. The larger cartoon characters now chase through a garden arena with floating score rewards and animated POP clouds.
 
-Meet the gang through animated portraits and character stories. Earn a new pal and equip it straight from the results screen, or follow named progress toward the next unlock. The cartoon style includes chunky outlines, rounded Nunito lettering, distinct accessories, blinking faces, wobbling stars, button squash, score bounces and collection confetti. Reduced motion disables decorative animation. Existing saves and gameplay rules remain compatible. See [preview notes](docs/PREVIEW.md).
+Collect three stars to charge **POP!** Tap near copycats to clear them for eight seconds; they return with a brief collision-free warning. A new original toy-band soundtrack has an in-game toggle. Invite friends from the home screen or share a score card after a run.
+
+The 12-sticker journal, daily medals, animated pal collection and permanent unlocks remain. Saves migrate, while daily seeds and records use **rules v2** for the revised gameplay. See [preview notes](docs/PREVIEW.md).
 
 The **Android preview download** GitHub workflow builds installable artifacts and publishes them as a public GitHub prerelease after uploading all files using GitHub’s own token. It can be run from the Actions tab. CI uses the optional `ECHO_PREVIEW_KEY` repository secret (base64-encoded development keystore, alias `androiddebugkey`, password `android`). Without that secret it generates a temporary development key; builds signed with different keys cannot update one another in place. Production signing remains separate.
 
 <img src="docs/media/home.png" alt="Cartoon home screen with Pip and the purple copycats" width="270"> <img src="docs/media/game.png" alt="The cartoon game arena" width="270">
 
-[Watch gameplay](docs/media/echoes.mp4)
+[Watch gameplay](docs/media/echoes.mp4) · [Floating joystick](docs/media/controls.png) · [Fixed joystick](docs/media/fixed.png) · [POP in action](docs/media/pop.png)
 
 ## What is implemented
 
@@ -39,7 +41,7 @@ On Android, install `build/android/project-echo-preview.apk`. It is an optimized
 
 See [the installation guide](docs/TESTING-THE-PREVIEW.md) for phone setup and [the validation record](docs/VALIDATION.md) for completed checks and remaining limitations.
 
-Drag in the lower pad to steer. Movement begins only after a deliberate drag. Release to maintain heading. On a computer, use WASD or arrow keys; Esc pauses. Keyboard/mouse and native touch are supported.
+Touch anywhere and drag to steer. Settings also offers a large fixed joystick over the arena. Movement begins only after a deliberate drag. Release to maintain heading. On a computer, use WASD or arrow keys; Space activates POP; Esc pauses. Keyboard/mouse and native touch are supported.
 
 ## Verify
 

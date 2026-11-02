@@ -1,3 +1,11 @@
+# Touch and POP preview 0.5.0
+
+**68 core checks and 44 UI checks pass (112 total).** New coverage includes full-screen floating touch, second-finger ownership, release over HUD buttons, button input priority, fixed joystick bounds, viewport fit, music toggles, POP charge/range, collision removal, historical replay visibility and exact respawn/grace boundaries. POP uses the same deterministic rules in both modes; daily records now use rules v2. Local saves retain existing progress and receive validated control defaults.
+
+The Kotlin bridge and Android APK/AAB build successfully. Native sharing now supports text invitations and a public URL on image shares. Browser captures include actual touch gestures for both joystick layouts and an actual POP applied after a simulated run. Android phone touch feel, audio output, sharing destinations and performance remain device-test requirements; automated checks do not establish those results or human retention.
+
+Public downloads use GitHub HTTPS releases, not workspace links. Signing limitations described below still apply. APK checksums and sizes are supplied in the release manifest. Older records below describe earlier versions only.
+
 # Journal preview 0.4.0
 
 **57 core checks and 30 UI checks pass (87 total).** New coverage verifies permanent milestone progress, multiple goals in one run, no repeated sticker announcements, old-save migration, malformed new fields, tutorial exclusion, five-run history, exact medal thresholds and daily rollover without losing permanent stickers. The journal and pre-run medal prompt are included in UI checks.

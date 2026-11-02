@@ -17,7 +17,7 @@ static func defaults() -> Dictionary:
 		"run_sparks": 0, "max_echoes": 0, "best_score": 0, "recent_runs": [],
 		"tutorial_complete": false, "skin": 0, "theme": 0, "sound_set": 0, "daily": {},
 		"settings": {"sound": true, "music": true, "haptics": true, "reduced_motion": false,
-			"high_contrast": false, "analytics": false}}
+			"high_contrast": false, "analytics": false, "fixed_joystick": false, "left_handed": false}}
 
 func load_profile() -> void:
 	var loaded := _read(path)

@@ -29,14 +29,27 @@ write("start", .4, lambda t: tone(t, [440, 554.365, 659.255, 880][min(3,int(t*10
 write("click", .07, lambda t: tone(t, 660)*math.exp(-t*65)*min(1,t*800)*.4)
 rng = random.Random(33)
 write("death", .6, lambda t: math.sin(math.tau * (110*t + 30*(1-math.exp(-8*t)))) * math.exp(-t*8) * min(1,t*200) * .45)
-notes = [220, 277.1826, 329.6276, 415.3047, 329.6276, 277.1826, 246.9417, 329.6276]
+# Eight-bar, 120 BPM toy-band loop: marimba, rounded bass, brushed hats and kick.
+# Every phrase ends before the loop boundary, avoiding a click or a silent gap.
+chords = [[261.6256,329.6276,391.9954], [220,261.6256,329.6276],
+          [174.6141,220,261.6256], [195.9977,246.9417,293.6648]]
+melody = [0, 2, 1, 2, 0, 1, 2, 1, 2, 1, 0, 1, 2, 0, 1, 2]
 def ambient(t):
-    # Integer-cycle low pad and soft eight-note ostinato; no hard loop edge.
-    envelope = min(1, t/1.5, (16-t)/1.5)
-    pad = .04*tone(t,220) + .02*tone(t,330)
-    phase = t % .5
-    note = notes[int(t/.5)%len(notes)]
-    arpeggio = (tone(phase,note*2) + .24*tone(phase,note*4))*math.exp(-phase*15)*min(1,phase*180)*.20
-    return (pad+arpeggio)*envelope
+    chord = chords[int(t / 4) % 4]
+    step = int(t / .25)
+    phase = t % .25
+    note = chord[melody[step % len(melody)]] * (2 if step % 8 in (3, 6) else 1)
+    bell = (tone(phase, note*2) + .26*tone(phase, note*5.01))
+    bell *= math.exp(-phase*18) * min(1,phase*500) * .30
+    beat = t % .5
+    bass_note = chord[0] / 2 if int(t/.5) % 4 != 3 else chord[2] / 2
+    bass = (tone(beat,bass_note) + .18*tone(beat,bass_note*2))
+    bass *= math.sin(math.pi*min(1,beat/.45))**2 * .19
+    kick = math.sin(math.tau*(46*beat + 3*(1-math.exp(-beat*35))))
+    kick *= math.exp(-beat*24) * min(1,beat*600) * .18
+    # Deterministic metallic brush without random generator state at the seam.
+    hat = (tone(phase,5300)+tone(phase,7100)) * math.exp(-phase*65)*min(1,phase*700)*.035
+    return bell + bass + kick + hat
 write("ambient",16,ambient)
-print("Generated six original audio assets.")
+write("pop",.42,lambda t: (tone(t,300*math.exp(-t*9))+.3*tone(t,620))*math.exp(-t*13)*min(1,t*400)*.65)
+print("Generated seven original audio assets.")

@@ -7,7 +7,7 @@ var music: AudioStreamPlayer
 var sound_set := 0
 
 func _ready() -> void:
-	for key in ["spark", "echo", "death", "start", "click"]:
+	for key in ["spark", "echo", "death", "start", "click", "pop"]:
 		var player := AudioStreamPlayer.new()
 		player.stream = load("res://assets/audio/%s.wav" % key)
 		player.volume_db = -8
@@ -15,7 +15,7 @@ func _ready() -> void:
 		effects[key] = player
 	music = AudioStreamPlayer.new()
 	music.stream = load("res://assets/audio/ambient.wav")
-	music.volume_db = -21
+	music.volume_db = -9
 	add_child(music)
 	music.finished.connect(func() -> void: music.play() if settings.get("music", true) else music.stop())
 
@@ -36,10 +36,18 @@ func play(key: String, echo_count: int = 0) -> void:
 	if settings.get("haptics", true) and OS.has_feature("android"):
 		Input.vibrate_handheld(45 if key == "death" else 15)
 	if music != null:
-		music.volume_db = -23 + mini(echo_count, 6) * 0.6
+		music.volume_db = -10 + mini(echo_count, 6) * 0.25
 
 func _exit_tree() -> void:
 	for child in get_children():
 		if child is AudioStreamPlayer:
 			child.stop()
 			child.stream = null
+
+func _notification(what: int) -> void:
+	if music == null:
+		return
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT or what == NOTIFICATION_APPLICATION_PAUSED:
+		music.stream_paused = true
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN or what == NOTIFICATION_APPLICATION_RESUMED:
+		music.stream_paused = false

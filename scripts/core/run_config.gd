@@ -1,7 +1,7 @@
 class_name RunConfig
 extends RefCounted
 
-const RULES_VERSION := 1
+const RULES_VERSION := 2
 var mode := "endless"
 var seed_value: int = 1
 var daily_date := ""

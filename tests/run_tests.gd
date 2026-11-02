@@ -8,6 +8,7 @@ func _initialize() -> void:
 	_test_targets()
 	_test_scoring_and_walls()
 	_test_echoes()
+	_test_pop()
 	_test_swept_collision()
 	_test_history()
 	_test_profile()
@@ -27,7 +28,7 @@ func _test_daily_seed() -> void:
 	var c := RunConfig.daily("2026-10-31")
 	check(a.seed_value == b.seed_value, "same UTC date has the same seed")
 	check(a.seed_value != c.seed_value, "next UTC day changes the seed")
-	check(a.record_key() == "2026-10-30:v1", "records include date and rules")
+	check(a.record_key() == "2026-10-30:v2", "records include date and rules")
 	check(a.daily_date == "2026-10-30", "starting date does not follow clock rollover")
 
 func _test_targets() -> void:
@@ -197,3 +198,33 @@ func _test_challenges() -> void:
 	check(store.best_for(RunConfig.daily("2026-11-03")) == 0 and not ChallengeBook.earned(store.data).is_empty(), "a new daily route leaves permanent stickers intact")
 	for suffix in ["", ".bak", ".tmp"]:
 		DirAccess.remove_absolute(path + suffix)
+
+func _test_pop() -> void:
+	var run := EchoRun.new()
+	run.tick = 1000
+	run.history.fill(Vector2(300, 300))
+	run.player = Vector2(360, 360)
+	check(run.pop_echoes().is_empty(), "uncharged POP cannot clear echoes")
+	run.pop_charge = EchoRun.POP_COST
+	run.player = Vector2(620, 620)
+	check(run.pop_echoes().is_empty() and run.pop_charge == 3, "out-of-range POP preserves charge")
+	run.player = Vector2(360, 360)
+	var cleared := run.pop_echoes()
+	check(cleared.size() == 2 and run.pops == 2 and run.pop_charge == 0, "charged POP clears all nearby copycats and consumes one charge")
+	check(not run.echo_is_present(1) and not run.echo_is_live(1), "popped copycat is invisible and cannot collide")
+	check(run.echo_is_present(1, 999) and not run.echo_is_present(1, 1000), "replay preserves the exact POP boundary")
+	check(not run.echo_is_present(1, 1479) and run.echo_is_present(1, 1480), "copycat returns after exactly eight seconds")
+	check(not run.echo_is_live(1, 1524) and run.echo_is_live(1, 1525), "returning copycat has collision-free materialization grace")
+	run.player = Vector2(300, 300)
+	run.spark = Vector2(650, 650)
+	run.step(Vector2.RIGHT)
+	check(run.alive, "simulation actually ignores collision with a popped copycat")
+	for i in range(5):
+		run.spark = run.player + Vector2(10, 0)
+		run.step(Vector2.RIGHT)
+	check(run.pop_charge == 3, "spark collection recharges POP and caps at one stored use")
+	run.alive = false
+	check(run.pop_echoes().is_empty() and run.pop_charge == 3, "dead runs cannot spend POP or rewrite replay")
+	var store := ProfileStore.new()
+	var migrated := store._sanitize({"schema": 1, "settings": {"fixed_joystick": "yes", "left_handed": true}})
+	check(not migrated.settings.fixed_joystick and migrated.settings.left_handed, "control settings migrate and reject malformed types")
